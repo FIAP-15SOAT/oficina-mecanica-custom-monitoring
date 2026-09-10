@@ -24,7 +24,7 @@ resource "datadog_monitor" "pod_memory" {
     environment     = var.env
     unit            = "% do limite de memória"
     window          = "10 min"
-    dashboard_url   = datadog_dashboard.kubernetes.url
+    dashboard_url   = local.dashboard_url_kubernetes
     logs_url        = local.logs_url_pods
   })
 
@@ -58,7 +58,7 @@ resource "datadog_monitor" "pod_restarts" {
     environment     = var.env
     unit            = "reinícios na janela"
     window          = "10 min"
-    dashboard_url   = datadog_dashboard.kubernetes.url
+    dashboard_url   = local.dashboard_url_kubernetes
     logs_url        = local.logs_url_pods
   })
 

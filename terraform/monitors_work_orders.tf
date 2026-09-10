@@ -17,7 +17,7 @@ resource "datadog_monitor" "work_order_failures" {
     environment     = var.env
     unit            = "respostas 5xx em rotas de ordem de serviço ou orçamento"
     window          = "10 min"
-    dashboard_url   = datadog_dashboard.work_orders.url
+    dashboard_url   = local.dashboard_url_work_orders
     logs_url        = local.logs_url_work_orders
   })
 

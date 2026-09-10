@@ -16,7 +16,7 @@ resource "datadog_monitor" "lambda_errors" {
     environment     = var.env
     unit            = "erros de plataforma"
     window          = "10 min"
-    dashboard_url   = datadog_dashboard.overview.url
+    dashboard_url   = local.dashboard_url_overview
     logs_url        = local.logs_url_lambda
   })
 

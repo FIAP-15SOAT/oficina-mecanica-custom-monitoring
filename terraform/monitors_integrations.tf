@@ -17,7 +17,7 @@ resource "datadog_monitor" "mail_send_failed" {
     environment     = var.env
     unit            = "falhas de envio"
     window          = "15 min"
-    dashboard_url   = datadog_dashboard.api.url
+    dashboard_url   = local.dashboard_url_api
     logs_url        = local.logs_url_mail
   })
 
@@ -56,7 +56,7 @@ resource "datadog_monitor" "dependency_degraded" {
     environment     = var.env
     unit            = "ocorrências de degradação"
     window          = "10 min"
-    dashboard_url   = datadog_dashboard.api.url
+    dashboard_url   = local.dashboard_url_api
     logs_url        = local.logs_url_health
   })
 

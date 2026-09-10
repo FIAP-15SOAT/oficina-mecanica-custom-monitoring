@@ -1,21 +1,21 @@
 output "dashboard_overview_url" {
   description = "Endereço do dashboard Visão Geral."
-  value       = datadog_dashboard.overview.url
+  value       = local.dashboard_url_overview
 }
 
 output "dashboard_api_url" {
   description = "Endereço do dashboard de API."
-  value       = datadog_dashboard.api.url
+  value       = local.dashboard_url_api
 }
 
 output "dashboard_work_orders_url" {
   description = "Endereço do dashboard de Ordens de Serviço."
-  value       = datadog_dashboard.work_orders.url
+  value       = local.dashboard_url_work_orders
 }
 
 output "dashboard_kubernetes_url" {
   description = "Endereço do dashboard de Kubernetes."
-  value       = datadog_dashboard.kubernetes.url
+  value       = local.dashboard_url_kubernetes
 }
 
 output "monitor_ids" {

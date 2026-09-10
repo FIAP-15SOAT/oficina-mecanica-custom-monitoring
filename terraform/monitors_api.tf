@@ -17,7 +17,7 @@ resource "datadog_monitor" "api_5xx" {
     environment     = var.env
     unit            = "respostas 5xx"
     window          = "10 min"
-    dashboard_url   = datadog_dashboard.api.url
+    dashboard_url   = local.dashboard_url_api
     logs_url        = local.logs_url_api_errors
   })
 
@@ -52,7 +52,7 @@ resource "datadog_monitor" "api_latency_p95" {
     environment     = var.env
     unit            = "segundos no p95"
     window          = "15 min"
-    dashboard_url   = datadog_dashboard.api.url
+    dashboard_url   = local.dashboard_url_api
     logs_url        = local.logs_url_api_errors
   })
 
