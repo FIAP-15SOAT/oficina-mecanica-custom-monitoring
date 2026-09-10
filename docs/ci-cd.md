@@ -151,12 +151,18 @@ listáveis com um token de colaborador; a confirmação deles é a primeira exec
    | `dashboards_read`, `dashboards_write` | os quatro dashboards |
    | `monitors_read`, `monitors_write` | os oito monitores |
    | `synthetics_read`, `synthetics_write` | o teste sintético |
-   | `metrics_read`, `metrics_write` | as quatro configurações de tag de métrica |
+   | `metrics_read` | leitura de metadado de métrica |
+   | `metric_tags_write` | **a configuração de tags de métrica**. Não existe escopo chamado `metrics_write`; o que `POST /api/v2/metrics/{metric}/tags` exige é este. `metrics_metadata_write` é outra coisa — unidade e descrição da métrica — e não serve |
    | `timeseries_query` | **não é usado pelo Terraform.** É exigido por `GET /api/v1/query`, que é como se confirma um nome de métrica e como se lê o p95 real na calibração de limiar |
    | `logs_read_data` | mesma razão, para `POST /api/v2/logs/analytics/aggregate`: conferir uma faceta ou um valor de evento antes de escrever a consulta |
 
    Sem os dois últimos, o Terraform funciona e **toda verificação e calibração fica cega** — os dois endpoints
    respondem `403`.
+
+   **Uma Application Key com escopos declarados limita o que ela pode fazer independentemente da role do
+   usuário.** A service account pode ter `Datadog Admin Role` e a chave continuar recusando uma escrita que
+   não esteja na lista de escopos: a role é o teto, o escopo é o que vale. O sintoma característico é `GET`
+   respondendo `404` e `POST` respondendo `403` no mesmo recurso — leitura autorizada, escrita não.
 3. Confirme:
    ```bash
    curl -H "DD-API-KEY: $DD_API_KEY" -H "DD-APPLICATION-KEY: $DD_APP_KEY" \
