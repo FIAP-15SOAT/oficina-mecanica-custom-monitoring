@@ -40,11 +40,19 @@ resource "datadog_monitor" "pod_memory" {
   tags = local.api_tags
 }
 
+# `kubernetes.containers.restarts` e contador cumulativo: interessa a variacao
+# na janela, nao o valor absoluto.
+#
+# A formulacao anterior, `change(sum(last_10m),last_10m)`, **nao disparou** num
+# teste com um pod reiniciando 8 vezes em 15 minutos: o grupo foi avaliado,
+# ficou `OK` e nunca acionou. `diff()` devolve o incremento entre pontos
+# consecutivos, e `max(last_10m)` dele responde "houve reinicio na janela?" sem
+# ambiguidade -- verificado com dado real na conta.
 resource "datadog_monitor" "pod_restarts" {
   name = "[Oficina Mecânica] Pod · Reinícios de contêiner"
   type = "query alert"
 
-  query = "change(sum(last_10m),last_10m):sum:kubernetes.containers.restarts{${local.k8s_scope}} by {pod_name} > ${var.pod_restart_critical_count}"
+  query = "max(last_10m):diff(max:kubernetes.containers.restarts{${local.k8s_scope}} by {pod_name}) > ${var.pod_restart_critical_count}"
 
   monitor_thresholds {
     critical = var.pod_restart_critical_count

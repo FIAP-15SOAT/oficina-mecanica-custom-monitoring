@@ -212,8 +212,7 @@ avg(last_10m):(avg:kubernetes.memory.working_set{kube_deployment:oficina-api} by
 **Arquivo**: `terraform/monitors_kubernetes.tf` · **Prioridade**: P3 · **Dashboard**: Kubernetes
 
 ```
-change(sum(last_10m),last_10m):sum:kubernetes.containers.restarts{kube_deployment:oficina-api}
-  by {pod_name} > 0
+max(last_10m):diff(max:kubernetes.containers.restarts{kube_deployment:oficina-api} by {pod_name}) > 0
 ```
 
 | Warning | Critical | Janela | Agrupamento | `new_group_delay` |
@@ -221,7 +220,17 @@ change(sum(last_10m),last_10m):sum:kubernetes.containers.restarts{kube_deploymen
 | — | > 0 | 10 min | `pod_name` | **600 s** |
 
 `kubernetes.containers.restarts` é um contador cumulativo: interessa a **variação** na janela, não o valor
-absoluto, que só cresce. Daí o agregador `change`.
+absoluto, que só cresce.
+
+**A primeira formulação, `change(sum(last_10m),last_10m)`, não funcionou** — e isso só apareceu no teste de
+ponta a ponta. Com um pod reiniciando **8 vezes em 15 minutos**, o grupo foi avaliado, ficou `OK` e nunca
+acionou, apesar de a variação medida na conta ser positiva (126 somando as amostras, 3 pelo valor do
+contador). Não tenho explicação fechada para a semântica de `change()` aqui — tenho a medição de que ela não
+dispara.
+
+A formulação atual usa `diff()`, que devolve o incremento entre pontos consecutivos do contador;
+`max(last_10m)` dele responde "houve reinício na janela?" sem ambiguidade. **Verificada com dado real**: pod
+reiniciando devolve `0.5`, pod saudável devolve `0`.
 
 **`new_group_delay` de 600 s** é maior que o dos demais porque todo provisionamento cria pods novos, e um pod
 recém-criado tem contador partindo do zero. Sem a folga, cada subida do laboratório geraria alerta.
