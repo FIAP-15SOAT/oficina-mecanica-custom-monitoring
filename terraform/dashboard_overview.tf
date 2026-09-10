@@ -2,7 +2,7 @@ resource "datadog_dashboard" "overview" {
   title       = "Oficina Mecânica · Visão Geral"
   description = "A solução está de pé agora? Ponto de entrada dos quatro dashboards."
   layout_type = "ordered"
-  tags        = local.api_tags
+  tags        = local.dashboard_tags
 
   widget {
     note_definition {

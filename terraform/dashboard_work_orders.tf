@@ -2,7 +2,7 @@ resource "datadog_dashboard" "work_orders" {
   title       = "Oficina Mecânica · Ordens de Serviço"
   description = "Fluxo de negócio: volume, permanência por status, lead time e transições."
   layout_type = "ordered"
-  tags        = local.api_tags
+  tags        = local.dashboard_tags
 
   template_variable {
     name     = "env"

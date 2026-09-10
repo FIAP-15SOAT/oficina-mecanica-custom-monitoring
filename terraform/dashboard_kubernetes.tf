@@ -2,7 +2,7 @@ resource "datadog_dashboard" "kubernetes" {
   title       = "Oficina Mecânica · Kubernetes"
   description = "Recursos dos pods da API, medidos pelo kubelet."
   layout_type = "ordered"
-  tags        = local.api_tags
+  tags        = local.dashboard_tags
 
   widget {
     note_definition {

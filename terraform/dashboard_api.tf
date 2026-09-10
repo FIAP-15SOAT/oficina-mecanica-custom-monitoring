@@ -2,7 +2,7 @@ resource "datadog_dashboard" "api" {
   title       = "Oficina Mecânica · API"
   description = "Performance e erros da API. Detalhe do grupo API da Visão Geral."
   layout_type = "ordered"
-  tags        = local.api_tags
+  tags        = local.dashboard_tags
 
   template_variable {
     name     = "env"

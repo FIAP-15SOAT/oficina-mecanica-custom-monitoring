@@ -39,8 +39,16 @@ Recursos ligados a um componente carregam também `service:<serviço>`:
 
 | Recurso | Tag de serviço |
 | --- | --- |
-| Dashboards, teste sintético, M1 a M6, M8, M9 | `service:oficina-mecanica-api` |
+| Teste sintético, M1 a M6, M8, M9 | `service:oficina-mecanica-api` |
 | M7 | `service:oficina-mecanica-lambda-customer-auth` |
+
+**Dashboards são a exceção, e ela é imposta pelo destino.** A API de dashboards aceita **apenas** as chaves
+`team` e `ai`; qualquer outra devolve `400 Invalid tag format. Valid tag keys are: team, ai.` Os quatro
+dashboards carregam, portanto, só `team:oficina-mecanica` — em `local.dashboard_tags`. Monitor e teste
+sintético não têm essa restrição e seguem a regra completa acima.
+
+O que se perde: filtrar a conta por `project:oficina-mecanica` **não** traz os dashboards. O que os mantém
+agrupados é a convenção de nome (`Oficina Mecânica · <Área>`) e a tag `team`.
 
 Em `terraform/locals.tf`: `local.common_tags`, `local.api_tags`, `local.lambda_tags`. Nenhum recurso declara
 tags à mão.
@@ -49,8 +57,9 @@ tags à mão.
 emite: M7 carrega `env:production` como recurso, mas **consulta** `functionname` e nunca `env`, porque a
 Lambda emite `env:prod-simulated` (L8).
 
-Filtrar a conta por `project:oficina-mecanica` lista todos os dashboards, monitores e testes sintéticos da
-solução. É o que o widget `manage_status` da Visão Geral usa.
+Filtrar a conta por `project:oficina-mecanica` lista todos os monitores e testes sintéticos da solução — é o
+que o widget `manage_status` da Visão Geral usa. Dashboards ficam de fora por causa da restrição acima; para
+eles, o filtro é `team:oficina-mecanica`.
 
 ---
 
