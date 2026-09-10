@@ -1,0 +1,112 @@
+name: CD
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-1
+  TF_IN_AUTOMATION: "true"
+
+jobs:
+  terraform-monitoring:
+    name: Terraform Datadog Monitoring
+    runs-on: ubuntu-latest
+    environment: production
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (vars.ENABLE_DEPLOY == 'true' || github.event_name == 'workflow_dispatch')
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: Validate required secrets and variables
+        env:
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
+          ALERT_EMAILS: ${{ vars.ALERT_EMAILS }}
+        run: |
+          set -euo pipefail
+          missing=0
+
+          if [ -z "${DD_API_KEY}" ]; then
+            echo "::error::DD_API_KEY não está configurado no escopo da organização."
+            missing=1
+          fi
+
+          if [ -z "${DD_APP_KEY}" ]; then
+            echo "::error::DD_APP_KEY não está configurado nos segredos do repositório."
+            missing=1
+          fi
+
+          if [ -z "${ALERT_EMAILS}" ]; then
+            echo "::error::ALERT_EMAILS não está configurada nas variáveis do repositório. Sem destinatários, os nove monitores seriam criados sem notificar ninguém."
+            missing=1
+          fi
+
+          if [ "${missing}" -ne 0 ]; then
+            echo "::error::Configuração externa incompleta -- inventário completo em docs/ci-cd.md."
+            exit 1
+          fi
+
+          echo "Configuração externa exigida presente."
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@254c19bd240aabef8777f48595e9d2d7b972184b # v6.2.1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform Init
+        run: terraform init -no-color
+        working-directory: terraform
+
+      - name: Terraform Validate
+        run: terraform validate -no-color
+        working-directory: terraform
+
+      - name: Terraform Plan
+        working-directory: terraform
+        env:
+          TF_VAR_datadog_api_key: ${{ secrets.DD_API_KEY }}
+          TF_VAR_datadog_app_key: ${{ secrets.DD_APP_KEY }}
+          TF_VAR_alert_emails: ${{ vars.ALERT_EMAILS }}
+          TF_VAR_environment_online: ${{ vars.ENVIRONMENT_ONLINE == 'true' }}
+        run: terraform plan -no-color
+
+      - name: Terraform Apply
+        working-directory: terraform
+        env:
+          TF_VAR_datadog_api_key: ${{ secrets.DD_API_KEY }}
+          TF_VAR_datadog_app_key: ${{ secrets.DD_APP_KEY }}
+          TF_VAR_alert_emails: ${{ vars.ALERT_EMAILS }}
+          TF_VAR_environment_online: ${{ vars.ENVIRONMENT_ONLINE == 'true' }}
+        run: terraform apply -auto-approve -no-color
+
+      - name: Publish dashboard addresses in the job summary
+        working-directory: terraform
+        run: |
+          set -euo pipefail
+          {
+            echo '### Dashboards provisionados'
+            echo ''
+            echo "- [Visão Geral]($(terraform output -raw dashboard_overview_url))"
+            echo "- [API]($(terraform output -raw dashboard_api_url))"
+            echo "- [Ordens de Serviço]($(terraform output -raw dashboard_work_orders_url))"
+            echo "- [Kubernetes]($(terraform output -raw dashboard_kubernetes_url))"
+            echo ''
+            echo "Teste sintético: \`$(terraform output -raw synthetic_test_status)\` — controlado pela variable \`ENVIRONMENT_ONLINE\`."
+          } >> "$GITHUB_STEP_SUMMARY"
