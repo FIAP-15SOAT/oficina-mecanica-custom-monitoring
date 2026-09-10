@@ -2,7 +2,7 @@ locals {
   api_scope = "env:${var.env},service:${var.api_service}"
 
   # O destino recusa `AND`/`OR` misturados com `,` no mesmo escopo. Onde a
-  # consulta precisa de `OR`, a virgula tem de virar `AND` na  expressao inteira.
+  # consulta precisa de `OR`, a vírgula tem de virar `AND` na expressão inteira.
   api_scope_and = "env:${var.env} AND service:${var.api_service}"
 
   k8s_scope    = "kube_deployment:${var.api_kube_deployment}"
@@ -21,14 +21,15 @@ locals {
 
   api_tags = concat(local.common_tags, ["service:${var.api_service}"])
 
-  # Dashboard so aceita as chaves `team` e `ai` -- qualquer outra volta
-  # 400 "Invalid tag format". A restricao e do destino e vale so para
-  # dashboards: monitor e teste sintetico aceitam tag arbitraria.
+  # Dashboard só aceita as chaves `team` e `ai` -- qualquer outra volta
+  # 400 "Invalid tag format". A restrição é do destino e vale só para
+  # dashboards: monitor e teste sintético aceitam tag arbitrária.
   dashboard_tags = ["team:${var.project_name}"]
 
-  # `datadog_dashboard.url` devolve CAMINHO (`/dashboard/<id>/<slug>`), nao
-  # endereco absoluto. Num resumo de execucao do GitHub ou num e-mail de alerta
-  # esse caminho resolve contra o dominio errado, e o link chega quebrado.
+  # `datadog_dashboard.url` devolve CAMINHO (`/dashboard/<id>/<slug>`), não
+  # endereço absoluto. Num resumo de execução do GitHub ou num e-mail de
+  # alerta, esse caminho resolve contra o domínio errado e o link chega
+  # quebrado.
   datadog_app_base = trimsuffix(var.datadog_app_url, "/")
 
   dashboard_url_overview    = "${local.datadog_app_base}${datadog_dashboard.overview.url}"

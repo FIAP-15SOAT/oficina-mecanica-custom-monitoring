@@ -43,8 +43,7 @@ O critério que sai daí é um só, e é aplicado a cada candidato:
 
 **Nenhum monitor tem `notify_no_data` ligado**, e é essa opção que torna seguro desligar o ambiente.
 
-Vale registrar o que a verificação em produção mostrou, porque a formulação original deste ADR era imprecisa:
-uma janela vazia avalia como zero **apenas quando a série existe**. Quando ela nunca existiu — nenhum 5xx,
+Uma janela vazia avalia como zero **apenas quando a série existe**. Quando ela nunca existiu — nenhum 5xx,
 nenhum erro de plataforma na Lambda — o destino reporta `No Data`. Com a solução saudável, três dos nove
 monitores ficam em `No Data`. Nenhum notifica, mas por causa de `notify_no_data = false`, não por aritmética
 de contagem.

@@ -91,9 +91,9 @@ resource "datadog_dashboard" "api" {
         }
       }
 
-      # `top()` ordena e corta; quem reduz a serie ao numero exibido e o
-      # agregador do widget, cujo padrao e MEDIA. Num widget que promete
-      # "requisicoes na janela", media por intervalo e a leitura errada.
+      # `top()` ordena e corta; quem reduz a série ao número exibido é o
+      # agregador do widget, cujo padrão é MÉDIA. Num widget que promete
+      # "requisições na janela", média por intervalo é a leitura errada.
       widget {
         toplist_definition {
           title     = "Top 10 rotas por volume (requisições na janela)"
@@ -272,8 +272,8 @@ resource "datadog_dashboard" "api" {
             }
           }
 
-          # Os dois limiares do monitor de latencia, desenhados. Quem olha o grafico ve onde o
-          # alerta vai disparar sem abrir a definicao do monitor.
+          # Os dois limiares do monitor de latência, desenhados: quem olha o
+          # gráfico vê onde o alerta dispara sem abrir a definição do monitor.
           marker {
             display_type = "warning dashed"
             label        = "warning latência p95 (${var.api_latency_p95_warning_seconds}s)"
