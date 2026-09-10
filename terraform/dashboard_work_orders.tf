@@ -32,25 +32,18 @@ resource "datadog_dashboard" "work_orders" {
       layout_type = "ordered"
       title       = "Volume"
 
+      # Sem `rollup` fixo. Um `rollup(sum, 86400)` produz um balde diario que so
+      # fecha a meia-noite: em qualquer janela que nao termine ali, o ultimo
+      # balde aparece parcial e o destino o rotula `interval in progress`.
+      # Deixando o destino escolher o intervalo, a largura da barra acompanha a
+      # janela selecionada e nao existe balde aberto.
       widget {
         timeseries_definition {
-          title     = "Ordens de serviço criadas por dia"
+          title     = "Ordens de serviço criadas"
           live_span = "1w"
 
           request {
-            q            = "sum:oficina.work_order.created{$env,$service}.as_count().rollup(sum, 86400)"
-            display_type = "bars"
-          }
-        }
-      }
-
-      widget {
-        timeseries_definition {
-          title     = "Ordens de serviço criadas por hora"
-          live_span = "1w"
-
-          request {
-            q            = "sum:oficina.work_order.created{$env,$service}.as_count().rollup(sum, 3600)"
+            q            = "sum:oficina.work_order.created{$env,$service}.as_count()"
             display_type = "bars"
           }
         }
@@ -197,44 +190,36 @@ resource "datadog_dashboard" "work_orders" {
   widget {
     group_definition {
       layout_type = "ordered"
-      title       = "Transições (a partir de logs)"
+      title       = "Funil e decisões"
 
+      # O funil sai da METRICA, nao do log. `oficina.work_order.status.duration`
+      # e emitida quando a ordem SAI de um status, entao `count:` dela por
+      # status responde quantas ordens avancaram de cada etapa -- que e a
+      # pergunta que o funil faz.
+      #
+      # O evento de log `work_order.status.updated` nao serve para isso: ele so
+      # e emitido em duas das seis transicoes (`RECEIVED -> IN_DIAGNOSIS` e
+      # `COMPLETED -> DELIVERED`). As demais sao efeito de acoes de dominio e
+      # emitem os seus proprios eventos.
       widget {
         toplist_definition {
-          title     = "Entradas em cada status na janela"
+          title     = "Ordens que saíram de cada status na janela"
           live_span = "1w"
 
           request {
-            formula {
-              formula_expression = "transicoes"
-            }
-
-            query {
-              event_query {
-                data_source = "logs"
-                name        = "transicoes"
-                indexes     = ["*"]
-
-                compute {
-                  aggregation = "count"
-                }
-
-                search {
-                  query = "service:$service env:$env @oficina.event.name:work_order.status.updated"
-                }
-
-                group_by {
-                  facet = "@oficina.work_order.status.current"
-                  limit = 10
-
-                  sort {
-                    aggregation = "count"
-                    order       = "desc"
-                  }
-                }
-              }
-            }
+            q = "count:oficina.work_order.status.duration{$env,$service} by {oficina.work_order.status}.as_count()"
           }
+        }
+      }
+
+      widget {
+        note_definition {
+          content          = "Os status terminais **não aparecem** aqui: `DELIVERED` e `CANCELLED` não emitem permanência, porque não se sai deles. O número de cada etapa é quantas ordens **avançaram** dela na janela."
+          background_color = "yellow"
+          font_size        = "12"
+          text_align       = "left"
+          vertical_align   = "top"
+          has_padding      = true
         }
       }
 

@@ -118,7 +118,7 @@ Valores de `@oficina.event.name` observados em 30 dias:
 | --- | ---: |
 | `app.started` · `db.connected` | 8 cada |
 | `app.shutdown` · `auth.authentication.succeeded` · `db.disconnected` | 4 cada |
-| `mail.send.succeeded` · `work_order.service.status.updated` · `work_order.status.updated` | 2 cada |
+| `mail.send.succeeded` · `work_order.service.status.updated` · `work_order.status.updated` | 2 cada — ver **L16** sobre a cobertura parcial do último |
 | `customer.access.granted` · `quote.approved` · `quote.submitted` · `stock.consumed` · `stock.reserved` | 1 cada |
 | `quote.rejected` · `mail.send.failed` · `health.degraded` | **0** — ver L15 |
 
@@ -168,6 +168,7 @@ Cada uma é citada por sigla nos demais documentos e nos comentários do Terrafo
 | **L12** | **Valor de tag de métrica é normalizado para minúsculas; atributo de log não** | `http.request.method` responde `get`/`post`; `@oficina.work_order.status.current` responde `IN_DIAGNOSIS` | O dashboard de Ordens de Serviço exibe as duas grafias, e isso é inerente às duas fontes | — |
 | **L13** | **CPU de uso em nanocores, requests e limits em cores** | `usage.total` ~15,2 e6 contra `requests` 0,2 | Comparação exige divisão por `1e9` | — |
 | **L14** | **Métricas de falha da Lambda não existem até a primeira falha** | `.errors`, `.timeouts`, `.out_of_memory` sem série em 30 dias | O monitor de erros da Lambda avalia em **`No Data`**, não em `OK`, na operação normal. Não notifica, por `notify_no_data = false` | — |
+| **L16** | **`work_order.status.updated` cobre só duas das seis transições** | Medido nas últimas 4 h: todas as ocorrências são `RECEIVED → IN_DIAGNOSIS` ou `COMPLETED → DELIVERED`, enquanto a métrica de permanência registra os seis status | O funil **não** pode sair deste evento. Sai de `count:oficina.work_order.status.duration by {oficina.work_order.status}`, que conta saídas de cada status | A API emitir o evento nas demais transições |
 | **L15** | **Três eventos de log nunca observados**: `quote.rejected`, `mail.send.failed`, `health.degraded` | Zero ocorrências em 30 dias de índice | Os monitores de falha de e-mail e de dependência degradada, e o widget de decisões de orçamento são construídos sobre eventos não observados. **Não podem ser verificados sem provocar o evento na origem** | Exercitar o caminho de exceção |
 
 `api_apm_summary.jpeg` confirma que a conta **não tinha** monitores, testes sintéticos nem objetivos de nível
