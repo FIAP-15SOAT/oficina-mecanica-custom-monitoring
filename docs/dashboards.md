@@ -24,6 +24,22 @@ sigla (L1, L13…). Os monitores ligados a cada dashboard estão em [Monitores](
    pessoa clicou por último.
 7. **Nenhum widget vazio sem nota.** Onde a ausência de dado é estrutural, uma nota amarela ao lado explica
    qual limitação a causa.
+8. **Todo widget que soma declara `aggregator = "sum"`.** Um `toplist` ou um `query_value` reduzem a série
+   temporal a um número, e **o padrão dessa redução é a média**. Num widget que promete "requisições na
+   janela" ou "ordens que saíram de cada status", a média por intervalo é a leitura errada — e ela aparece
+   como número quebrado (`1,5 ordens`), que é o sintoma que denuncia o problema. A forma curta `q = "..."`
+   **não** permite escolher o redutor; a forma de fórmula, sim.
+
+### Sobre `interval in progress`
+
+A última barra de qualquer gráfico de barras sobre janela viva é **sempre parcial**: o intervalo corrente
+ainda está enchendo, e o destino a rotula `interval in progress`. Não é defeito nem número errado — é o balde
+aberto, e some sozinho quando o intervalo fecha.
+
+Fixar um `rollup(sum, 86400)` **piora** isso, porque prende o balde a um dia inteiro: numa janela de 4 horas o
+balde do dia corrente aparece com o total parcial do dia, e quem olha lê como se fosse o dia fechado. Por isso
+nenhum widget de volume fixa `rollup`. Onde o total precisa ser inequívoco, o widget é um **indicador**, não
+uma barra.
 
 ---
 
@@ -101,7 +117,7 @@ A ordem dos grupos é deliberada e segue o caminho da requisição: entrada → 
 | Widget | Consulta |
 | --- | --- |
 | Requisições por classe de status (req/min) | três séries: `count:http.server.request.duration{$env,$service,http.response.status_code:2*}` (e `4*`, `5*`), `.as_count().rollup(sum, 60)` |
-| Top 10 rotas por volume | `top(count:http.server.request.duration{$env,$service} by {http.route}.as_count(), 10, 'sum', 'desc')` |
+| Top 10 rotas por volume | `count:http.server.request.duration{$env,$service} by {http.route}.as_count()`, com `aggregator = "sum"` e `limit` de 10 |
 | Rotas · volume, p50 (s), p95 (s) e % de 5xx | tabela com quatro consultas por `{http.route}` e a fórmula `errors / volume * 100` |
 
 A tabela é o widget mais denso da página, e é onde uma investigação começa: as quatro leituras que decidem por
@@ -174,12 +190,13 @@ mais direto que o p95. Percentis ficam habilitados apenas onde o monitor de lat�
 
 | Grupo | Widget | Consulta |
 | --- | --- | --- |
-| Volume | Ordens de serviço criadas | `sum:oficina.work_order.created{$env,$service}.as_count()`, em barras, **sem `rollup` fixo** |
+| Volume | Ordens de serviço criadas na janela | `sum:oficina.work_order.created{$env,$service}.as_count()`, indicador com `aggregator = "sum"` |
+| Volume | Ordens de serviço criadas ao longo da janela | mesma consulta, em barras, **sem `rollup` fixo** |
 | Permanência | Média por status (s) | `avg:oficina.work_order.status.duration{$env,$service} by {oficina.work_order.status}` |
 | Permanência | Máxima por status (s) | `max:oficina.work_order.status.duration{$env,$service} by {oficina.work_order.status}` |
 | Ciclo completo | Lead time — média e máximo (s) | `avg:` e `max:oficina.work_order.lead_time.duration{$env,$service}` |
 | Ciclo completo | Diagnóstico até conclusão — média e máximo (s) | `avg:` e `max:oficina.work_order.diagnosis_to_completion.duration{$env,$service}` |
-| Funil | Ordens que saíram de cada status | `count:oficina.work_order.status.duration{$env,$service} by {oficina.work_order.status}.as_count()` |
+| Funil | Ordens que saíram de cada status | `count:oficina.work_order.status.duration{$env,$service} by {oficina.work_order.status}.as_count()`, com `aggregator = "sum"` |
 | Funil | Decisões de orçamento | log: `@oficina.event.name:(quote.approved OR quote.rejected)`, contagem por `@oficina.event.name` |
 
 ### O funil vem da métrica, e a razão mudou

@@ -37,9 +37,29 @@ resource "datadog_dashboard" "work_orders" {
       # balde aparece parcial e o destino o rotula `interval in progress`.
       # Deixando o destino escolher o intervalo, a largura da barra acompanha a
       # janela selecionada e nao existe balde aberto.
+      # A ultima barra de qualquer grafico de barras sobre janela viva e sempre
+      # parcial -- o intervalo corrente ainda esta enchendo -- e o destino a
+      # rotula `interval in progress`. Nao e defeito nem numero errado: e o
+      # balde aberto. O indicador ao lado existe para dar o total da janela sem
+      # ambiguidade nenhuma.
+      widget {
+        query_value_definition {
+          title      = "Ordens de serviço criadas na janela"
+          live_span  = "1w"
+          autoscale  = false
+          precision  = 0
+          text_align = "center"
+
+          request {
+            q          = "sum:oficina.work_order.created{$env,$service}.as_count()"
+            aggregator = "sum"
+          }
+        }
+      }
+
       widget {
         timeseries_definition {
-          title     = "Ordens de serviço criadas"
+          title     = "Ordens de serviço criadas ao longo da janela"
           live_span = "1w"
 
           request {
@@ -201,13 +221,29 @@ resource "datadog_dashboard" "work_orders" {
       # e emitido em duas das seis transicoes (`RECEIVED -> IN_DIAGNOSIS` e
       # `COMPLETED -> DELIVERED`). As demais sao efeito de acoes de dominio e
       # emitem os seus proprios eventos.
+      # `aggregator = "sum"` e obrigatorio aqui. Um toplist reduz a serie
+      # temporal a um numero, e o padrao dessa reducao e a MEDIA -- que sobre
+      # uma contagem por intervalo devolve coisas como `1.5 ordens`. A forma
+      # curta `q = "..."` nao permite escolher o redutor; a forma de formula,
+      # sim.
       widget {
         toplist_definition {
           title     = "Ordens que saíram de cada status na janela"
           live_span = "1w"
 
           request {
-            q = "count:oficina.work_order.status.duration{$env,$service} by {oficina.work_order.status}.as_count()"
+            formula {
+              formula_expression = "saidas"
+            }
+
+            query {
+              metric_query {
+                data_source = "metrics"
+                name        = "saidas"
+                aggregator  = "sum"
+                query       = "count:oficina.work_order.status.duration{$env,$service} by {oficina.work_order.status}.as_count()"
+              }
+            }
           }
         }
       }
