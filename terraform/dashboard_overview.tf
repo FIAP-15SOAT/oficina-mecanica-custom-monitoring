@@ -180,7 +180,17 @@ resource "datadog_dashboard" "overview" {
           live_span = "1d"
 
           request {
-            q = "avg:oficina.work_order.status.duration{${local.api_scope}} by {oficina.work_order.status}"
+            formula {
+              formula_expression = "permanencia"
+            }
+
+            query {
+              metric_query {
+                data_source = "metrics"
+                name        = "permanencia"
+                query       = "avg:oficina.work_order.status.duration{${local.api_scope}} by {oficina.work_order.status}"
+              }
+            }
           }
         }
       }
@@ -322,13 +332,37 @@ resource "datadog_dashboard" "overview" {
           show_legend = true
 
           request {
-            q            = "avg:aws.lambda.enhanced.duration{${local.lambda_scope}}"
             display_type = "line"
+
+            formula {
+              formula_expression = "media"
+              alias              = "média"
+            }
+
+            query {
+              metric_query {
+                data_source = "metrics"
+                name        = "media"
+                query       = "avg:aws.lambda.enhanced.duration{${local.lambda_scope}}"
+              }
+            }
           }
 
           request {
-            q            = "max:aws.lambda.enhanced.duration{${local.lambda_scope}}"
             display_type = "line"
+
+            formula {
+              formula_expression = "maximo"
+              alias              = "máximo"
+            }
+
+            query {
+              metric_query {
+                data_source = "metrics"
+                name        = "maximo"
+                query       = "max:aws.lambda.enhanced.duration{${local.lambda_scope}}"
+              }
+            }
 
             style {
               palette   = "warm"

@@ -30,7 +30,6 @@ resource "datadog_dashboard" "kubernetes" {
 
             formula {
               formula_expression = "uso / 1000000000"
-              alias              = "uso"
             }
 
             query {
@@ -47,7 +46,6 @@ resource "datadog_dashboard" "kubernetes" {
 
             formula {
               formula_expression = "requests"
-              alias              = "requests"
             }
 
             query {
@@ -68,7 +66,6 @@ resource "datadog_dashboard" "kubernetes" {
 
             formula {
               formula_expression = "limits"
-              alias              = "limits"
             }
 
             query {
@@ -97,7 +94,6 @@ resource "datadog_dashboard" "kubernetes" {
 
             formula {
               formula_expression = "(estrangulados / periodos) * 100"
-              alias              = "% estrangulado"
             }
 
             query {
@@ -159,7 +155,6 @@ resource "datadog_dashboard" "kubernetes" {
 
             formula {
               formula_expression = "(uso / limite) * 100"
-              alias              = "% do limite"
             }
 
             query {
@@ -239,8 +234,19 @@ resource "datadog_dashboard" "kubernetes" {
           live_span = "4h"
 
           request {
-            q            = "max:kubernetes.containers.restarts{${local.k8s_scope}} by {pod_name}"
             display_type = "bars"
+
+            formula {
+              formula_expression = "reinicios"
+            }
+
+            query {
+              metric_query {
+                data_source = "metrics"
+                name        = "reinicios"
+                query       = "max:kubernetes.containers.restarts{${local.k8s_scope}} by {pod_name}"
+              }
+            }
           }
         }
       }
@@ -261,7 +267,6 @@ resource "datadog_dashboard" "kubernetes" {
 
             formula {
               formula_expression = "100 - ocioso"
-              alias              = "% em uso"
             }
 
             query {
@@ -281,8 +286,19 @@ resource "datadog_dashboard" "kubernetes" {
           live_span = "4h"
 
           request {
-            q            = "avg:system.mem.pct_usable{kube_cluster_name:${var.kube_cluster_name}} by {host}"
             display_type = "line"
+
+            formula {
+              formula_expression = "utilizavel"
+            }
+
+            query {
+              metric_query {
+                data_source = "metrics"
+                name        = "utilizavel"
+                query       = "avg:system.mem.pct_usable{kube_cluster_name:${var.kube_cluster_name}} by {host}"
+              }
+            }
           }
         }
       }

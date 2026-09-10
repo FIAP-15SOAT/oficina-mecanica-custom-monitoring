@@ -63,8 +63,20 @@ resource "datadog_dashboard" "work_orders" {
           live_span = "1w"
 
           request {
-            q            = "sum:oficina.work_order.created{$env,$service}.as_count()"
             display_type = "bars"
+
+            formula {
+              formula_expression = "criadas"
+              alias              = "ordens criadas"
+            }
+
+            query {
+              metric_query {
+                data_source = "metrics"
+                name        = "criadas"
+                query       = "sum:oficina.work_order.created{$env,$service}.as_count()"
+              }
+            }
           }
         }
       }
@@ -83,8 +95,19 @@ resource "datadog_dashboard" "work_orders" {
           show_legend = true
 
           request {
-            q            = "avg:oficina.work_order.status.duration{$env,$service} by {oficina.work_order.status}"
             display_type = "line"
+
+            formula {
+              formula_expression = "permanencia"
+            }
+
+            query {
+              metric_query {
+                data_source = "metrics"
+                name        = "permanencia"
+                query       = "avg:oficina.work_order.status.duration{$env,$service} by {oficina.work_order.status}"
+              }
+            }
           }
         }
       }
@@ -100,7 +123,6 @@ resource "datadog_dashboard" "work_orders" {
 
             formula {
               formula_expression = "maximo"
-              alias              = "máximo"
             }
 
             query {

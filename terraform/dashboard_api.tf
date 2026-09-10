@@ -335,13 +335,36 @@ resource "datadog_dashboard" "api" {
           show_legend = true
 
           request {
-            q            = "avg:db.client.operation.duration{$env,$service} by {db.operation.name}"
             display_type = "line"
+
+            formula {
+              formula_expression = "media"
+            }
+
+            query {
+              metric_query {
+                data_source = "metrics"
+                name        = "media"
+                query       = "avg:db.client.operation.duration{$env,$service} by {db.operation.name}"
+              }
+            }
           }
 
           request {
-            q            = "max:db.client.operation.duration{$env,$service}"
             display_type = "line"
+
+            formula {
+              formula_expression = "maximo"
+              alias              = "máximo geral"
+            }
+
+            query {
+              metric_query {
+                data_source = "metrics"
+                name        = "maximo"
+                query       = "max:db.client.operation.duration{$env,$service}"
+              }
+            }
 
             style {
               palette   = "warm"
@@ -358,13 +381,36 @@ resource "datadog_dashboard" "api" {
           show_legend = true
 
           request {
-            q            = "avg:db.client.connection.count{$env,$service} by {db.client.connection.state}"
             display_type = "area"
+
+            formula {
+              formula_expression = "conexoes"
+            }
+
+            query {
+              metric_query {
+                data_source = "metrics"
+                name        = "conexoes"
+                query       = "avg:db.client.connection.count{$env,$service} by {db.client.connection.state}"
+              }
+            }
           }
 
           request {
-            q            = "avg:db.client.connection.max{$env,$service}"
             display_type = "line"
+
+            formula {
+              formula_expression = "maximo"
+              alias              = "máximo do pool"
+            }
+
+            query {
+              metric_query {
+                data_source = "metrics"
+                name        = "maximo"
+                query       = "avg:db.client.connection.max{$env,$service}"
+              }
+            }
 
             style {
               palette   = "warm"
@@ -380,8 +426,20 @@ resource "datadog_dashboard" "api" {
           live_span = "1h"
 
           request {
-            q            = "avg:db.client.connection.pending_requests{$env,$service}"
             display_type = "bars"
+
+            formula {
+              formula_expression = "aguardando"
+              alias              = "aguardando conexão"
+            }
+
+            query {
+              metric_query {
+                data_source = "metrics"
+                name        = "aguardando"
+                query       = "avg:db.client.connection.pending_requests{$env,$service}"
+              }
+            }
           }
         }
       }
@@ -399,8 +457,20 @@ resource "datadog_dashboard" "api" {
           live_span = "1h"
 
           request {
-            q            = "avg:nodejs.eventloop.delay.p99{$env,$service}"
             display_type = "line"
+
+            formula {
+              formula_expression = "atraso"
+              alias              = "atraso p99"
+            }
+
+            query {
+              metric_query {
+                data_source = "metrics"
+                name        = "atraso"
+                query       = "avg:nodejs.eventloop.delay.p99{$env,$service}"
+              }
+            }
           }
         }
       }
@@ -411,8 +481,20 @@ resource "datadog_dashboard" "api" {
           live_span = "1h"
 
           request {
-            q            = "avg:nodejs.eventloop.utilization{$env,$service}"
             display_type = "line"
+
+            formula {
+              formula_expression = "utilizacao"
+              alias              = "utilização"
+            }
+
+            query {
+              metric_query {
+                data_source = "metrics"
+                name        = "utilizacao"
+                query       = "avg:nodejs.eventloop.utilization{$env,$service}"
+              }
+            }
           }
         }
       }
@@ -424,13 +506,37 @@ resource "datadog_dashboard" "api" {
           show_legend = true
 
           request {
-            q            = "avg:v8js.memory.heap.used{$env,$service}"
             display_type = "area"
+
+            formula {
+              formula_expression = "usado"
+              alias              = "usado"
+            }
+
+            query {
+              metric_query {
+                data_source = "metrics"
+                name        = "usado"
+                query       = "avg:v8js.memory.heap.used{$env,$service}"
+              }
+            }
           }
 
           request {
-            q            = "sum:v8js.memory.heap.space.size{$env,$service}"
             display_type = "line"
+
+            formula {
+              formula_expression = "alocado"
+              alias              = "alocado"
+            }
+
+            query {
+              metric_query {
+                data_source = "metrics"
+                name        = "alocado"
+                query       = "sum:v8js.memory.heap.space.size{$env,$service}"
+              }
+            }
 
             style {
               palette   = "warm"
