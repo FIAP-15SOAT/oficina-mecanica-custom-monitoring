@@ -32,16 +32,9 @@ resource "datadog_dashboard" "work_orders" {
       layout_type = "ordered"
       title       = "Volume"
 
-      # Sem `rollup` fixo. Um `rollup(sum, 86400)` produz um balde diario que so
-      # fecha a meia-noite: em qualquer janela que nao termine ali, o ultimo
-      # balde aparece parcial e o destino o rotula `interval in progress`.
-      # Deixando o destino escolher o intervalo, a largura da barra acompanha a
-      # janela selecionada e nao existe balde aberto.
-      # A ultima barra de qualquer grafico de barras sobre janela viva e sempre
-      # parcial -- o intervalo corrente ainda esta enchendo -- e o destino a
-      # rotula `interval in progress`. Nao e defeito nem numero errado: e o
-      # balde aberto. O indicador ao lado existe para dar o total da janela sem
-      # ambiguidade nenhuma.
+      # Total inequívoco da janela. A última barra do gráfico ao lado é sempre
+      # parcial -- o intervalo corrente ainda está enchendo -- e o destino a
+      # rotula `interval in progress`; este indicador não tem esse problema.
       widget {
         query_value_definition {
           title      = "Ordens de serviço criadas na janela"
@@ -57,6 +50,11 @@ resource "datadog_dashboard" "work_orders" {
         }
       }
 
+      # Sem `rollup` fixo. Um `rollup(sum, 86400)` prende o balde a um dia
+      # inteiro, que só fecha à meia-noite: em qualquer janela que não termine
+      # ali, o balde corrente exibe um total parcial como se fosse o do dia.
+      # Deixando o destino escolher o intervalo, a largura da barra acompanha a
+      # janela selecionada.
       widget {
         timeseries_definition {
           title     = "Ordens de serviço criadas ao longo da janela"
@@ -234,20 +232,19 @@ resource "datadog_dashboard" "work_orders" {
       layout_type = "ordered"
       title       = "Funil e decisões"
 
-      # O funil sai da METRICA, nao do log. `oficina.work_order.status.duration`
-      # e emitida quando a ordem SAI de um status, entao `count:` dela por
-      # status responde quantas ordens avancaram de cada etapa -- que e a
-      # pergunta que o funil faz.
+      # O funil sai da MÉTRICA, não do log. `oficina.work_order.status.duration`
+      # é emitida quando a ordem SAI de um status, então `count:` dela por
+      # status responde quantas ordens avançaram de cada etapa.
       #
-      # O evento de log `work_order.status.updated` nao serve para isso: ele so
-      # e emitido em duas das seis transicoes (`RECEIVED -> IN_DIAGNOSIS` e
-      # `COMPLETED -> DELIVERED`). As demais sao efeito de acoes de dominio e
-      # emitem os seus proprios eventos.
-      # `aggregator = "sum"` e obrigatorio aqui. Um toplist reduz a serie
-      # temporal a um numero, e o padrao dessa reducao e a MEDIA -- que sobre
-      # uma contagem por intervalo devolve coisas como `1.5 ordens`. A forma
-      # curta `q = "..."` nao permite escolher o redutor; a forma de formula,
-      # sim.
+      # O evento de log `work_order.status.updated` não serve aqui: ele só é
+      # emitido em duas das seis transições (`RECEIVED -> IN_DIAGNOSIS` e
+      # `COMPLETED -> DELIVERED`). As demais são efeito de ações de domínio e
+      # emitem os seus próprios eventos.
+      #
+      # `aggregator = "sum"` é obrigatório: um toplist reduz a série temporal a
+      # um número, e o padrão dessa redução é a MÉDIA -- que sobre uma contagem
+      # por intervalo devolve coisas como `1.5 ordens`. A forma curta
+      # `q = "..."` não permite escolher o redutor; a forma de fórmula, sim.
       widget {
         toplist_definition {
           title     = "Ordens que saíram de cada status na janela"

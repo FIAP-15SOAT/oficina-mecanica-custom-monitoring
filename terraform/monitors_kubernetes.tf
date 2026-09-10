@@ -1,10 +1,10 @@
-# Memoria do pod proxima do limite.
+# Memória do pod próxima do limite.
 #
-# `working_set` sobre `limits`, e nao `usage`, porque `working_set` e o que o
-# encerramento por falta de memoria observa. Nao ha monitor de CPU: com
-# autoescalonamento mirando 70% de CPU, "CPU alta" e o mecanismo funcionando.
-# O sinal acionavel seria estrangulamento sustentado, que fica no dashboard e
-# so vira monitor se o monitor de latencia provar correlacao.
+# `working_set` sobre `limits`, e não `usage`, porque `working_set` é o que o
+# encerramento por falta de memória observa. Não há monitor de CPU: com
+# autoescalonamento mirando 70% de CPU, "CPU alta" é o mecanismo funcionando.
+# O sinal acionável seria estrangulamento sustentado, que fica no dashboard e
+# só vira monitor se a latência da API provar correlação.
 resource "datadog_monitor" "pod_memory" {
   name = "[Oficina Mecânica] Pod · Memória próxima do limite"
   type = "query alert"
@@ -40,14 +40,12 @@ resource "datadog_monitor" "pod_memory" {
   tags = local.api_tags
 }
 
-# `kubernetes.containers.restarts` e contador cumulativo: interessa a variacao
-# na janela, nao o valor absoluto.
+# `kubernetes.containers.restarts` é contador cumulativo: interessa a variação
+# na janela, não o valor absoluto. `diff()` devolve o incremento entre pontos
+# consecutivos, e `max(last_10m)` dele responde "houve reinício na janela?".
 #
-# A formulacao anterior, `change(sum(last_10m),last_10m)`, **nao disparou** num
-# teste com um pod reiniciando 8 vezes em 15 minutos: o grupo foi avaliado,
-# ficou `OK` e nunca acionou. `diff()` devolve o incremento entre pontos
-# consecutivos, e `max(last_10m)` dele responde "houve reinicio na janela?" sem
-# ambiguidade -- verificado com dado real na conta.
+# Não troque por `change()`: essa família não dispara neste cenário, mesmo com
+# a variação do contador sendo positiva.
 resource "datadog_monitor" "pod_restarts" {
   name = "[Oficina Mecânica] Pod · Reinícios de contêiner"
   type = "query alert"

@@ -23,7 +23,7 @@ Aplicada aos nove, e cada item tem razão:
 | `notify_by` | **não usado** | O destino recusa uma lista que cubra *todos* os agrupamentos da consulta — `The notify_by list may not include all of the query's group keys` — e os monitores agrupados aqui têm uma única chave de agrupamento. O comportamento pretendido, uma notificação por rota ou por pod afetado, **já é o padrão** de um monitor agrupado |
 | `tags` | `project:oficina-mecanica`, `managed-by:terraform`, `env:…`, `service:…` | Ver [Convenções](conventions.md) |
 
-**O que acontece quando não há evento — medido, não suposto.** Há dois casos, e eles são diferentes:
+**O que acontece quando não há evento.** Há dois casos, e eles são diferentes:
 
 - **A série existe e a janela está vazia** → avalia como **zero**. É o caso de um monitor de log cuja consulta
   já retornou algo antes.
@@ -220,29 +220,20 @@ max(last_10m):diff(max:kubernetes.containers.restarts{kube_deployment:oficina-ap
 | — | > 0 | 10 min | `pod_name` | **600 s** |
 
 `kubernetes.containers.restarts` é um contador cumulativo: interessa a **variação** na janela, não o valor
-absoluto, que só cresce.
+absoluto, que só cresce. `diff()` devolve o incremento entre pontos consecutivos, e `max(last_10m)` dele
+responde "houve reinício na janela?" — verificado contra um pod em `CrashLoopBackOff`, que devolve valor
+positivo enquanto o pod saudável devolve `0`.
 
-**A primeira formulação, `change(sum(last_10m),last_10m)`, não funcionou** — e isso só apareceu no teste de
-ponta a ponta. Com um pod reiniciando **8 vezes em 15 minutos**, o grupo foi avaliado, ficou `OK` e nunca
-acionou, apesar de a variação medida na conta ser positiva (126 somando as amostras, 3 pelo valor do
-contador). Não tenho explicação fechada para a semântica de `change()` aqui — tenho a medição de que ela não
-dispara.
-
-A formulação atual usa `diff()`, que devolve o incremento entre pontos consecutivos do contador;
-`max(last_10m)` dele responde "houve reinício na janela?" sem ambiguidade. **Verificada com dado real**: pod
-reiniciando devolve `0.5`, pod saudável devolve `0`.
+**Não use a família `change()` aqui.** Ela não dispara neste cenário, mesmo com a variação do contador sendo
+positiva.
 
 **`new_group_delay` de 600 s** é maior que o dos demais porque todo provisionamento cria pods novos, e um pod
 recém-criado tem contador partindo do zero. Sem a folga, cada subida do laboratório geraria alerta.
 
 **O `{{value}}` deste alerta não é uma contagem de reinícios.** `diff()` devolve o incremento entre pontos
-consecutivos do contador, já suavizado pelo rollup do destino — no teste real, um pod que reiniciou oito vezes
-produziu `0.1`. Quem lê o e-mail precisa da informação na **linha do sintoma** (`Contêiner reiniciou — pod
-<nome>`), não no número; por isso a unidade diz *de aumento no contador de reinícios*, e não *reinícios*.
-
-Pendência conhecida: `change(max(last_10m),last_10m)` devolveria a contagem real — 3, na medição feita durante
-o teste — mas `change()` foi justamente a família que **não disparou**, e trocar de volta sem reproduzir o
-`CrashLoopBackOff` seria adivinhar. Fica registrado para quando houver oportunidade de reexercitar o cenário.
+consecutivos do contador, suavizado pelo rollup do destino: um pod que reiniciou oito vezes produz um valor
+como `0.1`. A informação acionável está na **linha do sintoma** — `Contêiner reiniciou — pod <nome>` — e por
+isso a unidade diz *de aumento no contador de reinícios*, não *reinícios*.
 
 ---
 

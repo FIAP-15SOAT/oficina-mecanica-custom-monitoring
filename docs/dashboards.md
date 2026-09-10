@@ -213,22 +213,18 @@ mais direto que o p95. Percentis ficam habilitados apenas onde o monitor de lat�
 | Funil | Ordens que saíram de cada status | `count:oficina.work_order.status.duration{$env,$service} by {oficina.work_order.status}.as_count()`, com `aggregator = "sum"` |
 | Funil | Decisões de orçamento | log: `@oficina.event.name:(quote.approved OR quote.rejected)`, contagem por `@oficina.event.name` |
 
-### O funil vem da métrica, e a razão mudou
+### O funil vem da métrica, não do log
 
-O desenho original supunha que **nenhuma métrica** responderia "quantas ordens passaram por cada status", e
-por isso o funil nasceu como widget de log sobre `work_order.status.updated`. **A verificação em produção
-mostrou que a suposição estava errada, nas duas pontas:**
+`oficina.work_order.status.duration` é emitida **quando a ordem sai de um status**. Logo, `count:` dela por
+status responde quantas ordens avançaram de cada etapa — o funil, com os seis status.
 
-- `oficina.work_order.status.duration` é emitida **quando a ordem sai de um status**. Logo,
-  `count:` dela por status responde exatamente quantas ordens avançaram de cada etapa — o funil, com os seis
-  status.
-- O evento `work_order.status.updated` **não** cobre o fluxo: ele só é emitido em **duas das transições**,
-  `RECEIVED → IN_DIAGNOSIS` e `COMPLETED → DELIVERED`. As demais são efeito de ações de domínio — submissão e
-  aprovação de orçamento, conclusão de serviço — e emitem os seus próprios eventos. Um widget sobre ele
-  mostrava dois status e dava a impressão de que os outros quatro não tinham acontecido.
+**O evento `work_order.status.updated` não serve para isso**: ele só é emitido em **duas das transições**,
+`RECEIVED → IN_DIAGNOSIS` e `COMPLETED → DELIVERED`. As demais são efeito de ações de domínio — submissão e
+aprovação de orçamento, conclusão de serviço — e emitem os seus próprios eventos. Um widget sobre ele mostra
+dois status e passa a impressão de que os outros quatro não aconteceram.
 
-O funil passou para a métrica. **O que ela não cobre**: `DELIVERED` e `CANCELLED` não aparecem, porque status
-terminal não emite permanência — não se sai dele. Uma nota amarela no grupo diz isso.
+**O que a métrica não cobre**: `DELIVERED` e `CANCELLED` não aparecem, porque status terminal não emite
+permanência — não se sai dele. Uma nota amarela no grupo diz isso.
 
 O widget de **decisões de orçamento** continua sendo de log: `quote.approved` e `quote.rejected` não têm
 métrica equivalente.
