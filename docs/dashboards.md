@@ -39,7 +39,7 @@ daqui por um dos três links da nota de abertura.
 
 | Widget | Consulta | Monitor ligado |
 | --- | --- | --- |
-| Verificação externa da rota pública — histórico | `alert_graph` sobre o monitor do teste sintético | M1 |
+| Verificação externa da rota pública — histórico | `alert_graph` sobre o monitor do teste sintético | Disponibilidade externa |
 | Monitores da solução | `manage_status` com `tag:(project:oficina-mecanica)` | todos |
 
 O `manage_status` é o único widget que responde "o que está vermelho agora?" sem que a pessoa saiba de antemão
@@ -51,7 +51,7 @@ o que procurar.
 | --- | --- |
 | Requisições por minuto | `count:http.server.request.duration{env:production,service:oficina-mecanica-api}.as_count().rollup(sum, 60)` |
 | Respostas 5xx (% do total) | `(count:…{…,http.response.status_code:5*}.as_count() / count:…{…}.as_count()) * 100` — verde ≤ 1 %, amarelo > 1 %, vermelho > 5 % |
-| Latência p95 (s) | `p95:http.server.request.duration{env:production,service:oficina-mecanica-api}` — cores nos limiares de M3 |
+| Latência p95 (s) | `p95:http.server.request.duration{env:production,service:oficina-mecanica-api}` — cores nos limiares do monitor de latência |
 
 ### Negócio
 
@@ -65,7 +65,7 @@ o que procurar.
 | Widget | Consulta |
 | --- | --- |
 | Pods da API emitindo métrica | `count_nonzero(avg:kubernetes.memory.working_set{kube_deployment:oficina-api} by {pod_name})` |
-| Memória sobre o limite por pod (%) | `(working_set / limits) * 100 by {pod_name}` — cores nos limiares de M5 |
+| Memória sobre o limite por pod (%) | `(working_set / limits) * 100 by {pod_name}` — cores nos limiares do monitor de memória |
 
 `kubernetes.containers.running` **não** é usada: ela responde `pod_name:N/A` e não permite a contagem por pod.
 E, por L1, esta contagem é de pods que **emitem métrica**, não de pods prontos.
@@ -114,11 +114,11 @@ de caminho inexistente. Não é defeito da consulta.
 
 | Widget | Consulta |
 | --- | --- |
-| Latência p50, p90, p95 e p99 (s) | quatro séries `pNN:http.server.request.duration{$env,$service}` + marcadores nos limiares de M3 |
+| Latência p50, p90, p95 e p99 (s) | quatro séries `pNN:http.server.request.duration{$env,$service}` + marcadores nos limiares do monitor de latência |
 | Distribuição de latência na janela (s) | `avg:http.server.request.duration{$env,$service}` em widget de distribuição |
 | Top 10 rotas por p95 (s) | `top(p95:http.server.request.duration{$env,$service} by {http.route}, 10, 'mean', 'desc')` |
 
-Os marcadores desenham os dois limiares de M3 sobre o gráfico: quem olha vê onde o alerta vai disparar sem
+Os marcadores desenham os dois limiares do monitor de latência sobre o gráfico: quem olha vê onde o alerta vai disparar sem
 abrir a definição do monitor.
 
 ### Banco
@@ -132,7 +132,7 @@ abrir a definição do monitor.
 **Por que média e máximo, e não p95.** `db.client.operation.duration` também é uma *distribution*, e percentis
 exigiriam uma segunda configuração de tags — que multiplicaria o custo de custom metrics sem que nenhum
 monitor dependa dela. Uma nota amarela no próprio grupo diz isso. Gatilho para reavaliar: latência de banco
-virar causa recorrente de M3.
+virar causa recorrente de latência alta na API.
 
 A fila de espera por conexão é o sinal que **antecede** a saturação do pool: sobe antes de a latência da API
 subir.
@@ -169,7 +169,7 @@ Janela de 7 dias porque a unidade de análise é o ciclo de uma ordem de serviç
 **Média e máximo, não percentis.** As três métricas de negócio também são *distributions*, e p50/p95 sobre elas
 exigiriam habilitar percentis metrica a metrica — o que dobra o custo em custom metrics de cada uma. Nenhum
 monitor depende desses percentis, e para responder "alguma ordem ficou presa neste status?" o **máximo** é
-mais direto que o p95. Percentis ficam habilitados apenas onde M3 depende deles:
+mais direto que o p95. Percentis ficam habilitados apenas onde o monitor de latência depende deles:
 `http.server.request.duration`.
 
 | Grupo | Widget | Consulta |
@@ -214,7 +214,7 @@ defeito da consulta.
 | CPU | CPU por pod contra requests e limits (cores) | `avg:kubernetes.cpu.usage.total{kube_deployment:oficina-api} by {pod_name} / 1e9`, sobreposta a `cpu.requests` e `cpu.limits` |
 | CPU | Estrangulamento por pod (% dos períodos) | `(cfs.throttled.periods / cfs.periods) * 100 by {pod_name}` |
 | Memória | Working set por pod contra o limite (bytes) | `avg:kubernetes.memory.working_set{…} by {pod_name}` e `avg:kubernetes.memory.limits{…} by {pod_name}` |
-| Memória | Working set sobre o limite por pod (%) | a razão × 100, com marcadores nos limiares de M5 |
+| Memória | Working set sobre o limite por pod (%) | a razão × 100, com marcadores nos limiares do monitor de memória |
 | Ciclo de vida | Pods emitindo métrica | `count_nonzero(avg:kubernetes.memory.working_set{…} by {pod_name})` |
 | Ciclo de vida | Reinícios de contêiner por pod | `max:kubernetes.containers.restarts{…} by {pod_name}` |
 | Nós | CPU em uso por nó (%) | `100 - avg:system.cpu.idle{kube_cluster_name:oficina-mecanica} by {host}` |

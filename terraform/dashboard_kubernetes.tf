@@ -181,13 +181,13 @@ resource "datadog_dashboard" "kubernetes" {
 
           marker {
             display_type = "warning dashed"
-            label        = "warning M5 (${var.pod_memory_warning_percent}%)"
+            label        = "warning memória do pod (${var.pod_memory_warning_percent}%)"
             value        = "y = ${var.pod_memory_warning_percent}"
           }
 
           marker {
             display_type = "error dashed"
-            label        = "critical M5 (${var.pod_memory_critical_percent}%)"
+            label        = "critical memória do pod (${var.pod_memory_critical_percent}%)"
             value        = "y = ${var.pod_memory_critical_percent}"
           }
         }

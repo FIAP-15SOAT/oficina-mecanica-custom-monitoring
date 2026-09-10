@@ -18,9 +18,9 @@ Aplicada aos nove, e cada item tem razão:
 | `renotify_interval` | `0` | Não há plantão. Repetir o alerta a cada N minutos treina o time a silenciar a caixa de entrada |
 | `notify_audit` | `false` | Mudança de definição do monitor é vista no Pull Request, não por e-mail |
 | `include_tags` | `true` | O e-mail carrega as tags do grupo afetado |
-| `require_full_window` | `true` **nos monitores de contagem** (M2, M4, M8, M9) | Contagem parcial de janela produz falso negativo. **Exceção: M7**, cuja métrica só passa a existir na primeira falha (L14) |
+| `require_full_window` | `true` **nos monitores de contagem** | Contagem parcial de janela produz falso negativo. **Exceção: erros da Lambda**, cuja métrica só passa a existir na primeira falha (L14) |
 | `escalation_message` | não usado | Não há plantão para escalar |
-| `notify_by` | **não usado** | O destino recusa uma lista que cubra *todos* os agrupamentos da consulta — `The notify_by list may not include all of the query's group keys` — e M2, M4, M5 e M6 agrupam por uma única chave. O comportamento pretendido, uma notificação por rota ou por pod afetado, **já é o padrão** de um monitor agrupado |
+| `notify_by` | **não usado** | O destino recusa uma lista que cubra *todos* os agrupamentos da consulta — `The notify_by list may not include all of the query's group keys` — e os monitores agrupados aqui têm uma única chave de agrupamento. O comportamento pretendido, uma notificação por rota ou por pod afetado, **já é o padrão** de um monitor agrupado |
 | `tags` | `project:oficina-mecanica`, `managed-by:terraform`, `env:…`, `service:…` | Ver [Convenções](conventions.md) |
 
 **Contagem vazia é zero.** Todos os monitores de erro e de negócio são baseados em contagem, e uma janela sem
@@ -61,7 +61,7 @@ repositório é público e endereço é dado pessoal.
 
 ---
 
-## M1 · Disponibilidade externa — rota pública indisponível
+## Disponibilidade externa · rota pública indisponível
 
 **Arquivo**: `terraform/synthetics.tf` · **Prioridade**: P1 · **Dashboard**: Visão Geral (grupo Disponibilidade)
 
@@ -97,7 +97,7 @@ identificador. O valor vem da variable `ENVIRONMENT_ONLINE`; o ritual está no [
 
 ---
 
-## M2 · API — Erros 5xx acima do limite
+## API · Erros 5xx acima do limite
 
 **Arquivo**: `terraform/monitors_api.tf` · **Prioridade**: P2 · **Dashboard**: API
 
@@ -123,7 +123,7 @@ para 5xx e erro de transporte.
 
 ---
 
-## M3 · API — Latência p95 acima do alvo
+## API · Latência p95 acima do alvo
 
 **Arquivo**: `terraform/monitors_api.tf` · **Prioridade**: P3 · **Dashboard**: API (grupo Latência)
 
@@ -150,7 +150,7 @@ sem a configuração, a consulta responde `missing_aggregation` (L6).
 
 ---
 
-## M4 · Ordens de Serviço — Falhas no processamento
+## Ordens de Serviço · Falhas no processamento
 
 **Arquivo**: `terraform/monitors_work_orders.tf` · **Prioridade**: P2 · **Dashboard**: Ordens de Serviço
 
@@ -173,16 +173,16 @@ monitor de log sobre a linha de access log fica registrado e não adotado.
 (`'AND' and 'OR' cannot be mixed with ','`), e `IN (…)` não aceita curinga. `AND` explícito na expressão
 inteira é a única forma que compõe o filtro de duas famílias de rota.
 
-### A redundância com M2 é assumida
+### A redundância com o monitor de erros 5xx é assumida
 
-M4 e M2 se sobrepõem numa indisponibilidade total, **e isso é aceito**. São leituras distintas — "a API está
+Este monitor e o de erros 5xx se sobrepõem numa indisponibilidade total, **e isso é aceito**. São leituras distintas — "a API está
 falhando" e "o fluxo de negócio está quebrado" — para públicos distintos. As alternativas foram avaliadas e
 recusadas: um monitor composto seria cerimônia desproporcional; um único monitor agrupado por rota perderia a
 nomeação do impacto de negócio que o requisito pede.
 
 ---
 
-## M5 · Pod — Memória próxima do limite
+## Pod · Memória próxima do limite
 
 **Arquivo**: `terraform/monitors_kubernetes.tf` · **Prioridade**: P2 · **Dashboard**: Kubernetes
 
@@ -199,7 +199,7 @@ avg(last_10m):(avg:kubernetes.memory.working_set{kube_deployment:oficina-api} by
 
 ---
 
-## M6 · Pod — Reinícios de contêiner
+## Pod · Reinícios de contêiner
 
 **Arquivo**: `terraform/monitors_kubernetes.tf` · **Prioridade**: P3 · **Dashboard**: Kubernetes
 
@@ -220,7 +220,7 @@ recém-criado tem contador partindo do zero. Sem a folga, cada subida do laborat
 
 ---
 
-## M7 · Lambda customer-auth — Erros de execução
+## Lambda customer-auth · Erros de execução
 
 **Arquivo**: `terraform/monitors_lambda.tf` · **Prioridade**: P2 · **Dashboard**: Visão Geral (grupo Lambda)
 
@@ -248,7 +248,7 @@ justamente quando a série enfim aparecesse.
 
 ---
 
-## M8 · Integrações — Falha de envio de e-mail
+## Integrações · Falha de envio de e-mail
 
 **Arquivo**: `terraform/monitors_integrations.tf` · **Prioridade**: P4 · **Dashboard**: API
 
@@ -273,7 +273,7 @@ na origem**.
 
 ---
 
-## M9 · Dependência — Health check degradado
+## Dependência · Health check degradado
 
 **Arquivo**: `terraform/monitors_integrations.tf` · **Prioridade**: P3 · **Dashboard**: API
 
@@ -290,7 +290,7 @@ O evento é emitido pela própria verificação de saúde interna quando uma dep
 É o único sinal que nomeia **qual** dependência falhou — a rota de saúde é excluída da instrumentação na
 entrada (L3), então não há métrica nem trace dela.
 
-⚠️ Mesmo aviso de M8: **`health.degraded` nunca foi observado** (L15).
+⚠️ Mesmo aviso do monitor de e-mail: **`health.degraded` nunca foi observado** (L15).
 
 Toda consulta de log escopa por `service` **por inclusão**: o índice recebe o cluster inteiro, ~35 % dele é
 ruído de plataforma e `klog` escreve em stderr, então qualquer consulta de erro sem escopo traria `kube-proxy`
@@ -303,13 +303,13 @@ e `metrics-server` como se fossem defeito da aplicação (L7).
 | Recusado | Motivo |
 | --- | --- |
 | **Coleta interrompida** | Seu disparo seria garantido ao final de toda sessão do laboratório. **Gatilho para reintroduzir**: o ambiente passar a ser permanente |
-| **CPU alta** | Com autoescalonamento mirando 70 % de CPU, "CPU alta" é o mecanismo funcionando. O sinal acionável seria estrangulamento sustentado, que fica no dashboard e só vira monitor se M3 provar correlação |
+| **CPU alta** | Com autoescalonamento mirando 70 % de CPU, "CPU alta" é o mecanismo funcionando. O sinal acionável seria estrangulamento sustentado, que fica no dashboard e só vira monitor se a latência da API provar correlação |
 | **Nenhuma OS criada em 24 h** | Dispararia todo dia num ambiente efêmero |
 | **Permanência média por status acima de X** | Não existe acordo de negócio, e inventar um limiar produz alerta permanentemente vermelho ou permanentemente verde |
-| **Latência de banco em monitor próprio** | Sem latência de API alta não é incidente; com ela, M3 já disparou e o dashboard mostra a causa |
+| **Latência de banco em monitor próprio** | Sem latência de API alta não é incidente; com ela, o monitor de latência já disparou e o dashboard mostra a causa |
 | **Descarte de span pelo canal `diag` do OTel** | Descarte por fila cheia é comportamento **declarado como aceito** no ADR 0005 da API. Alertar contrariaria a decisão de origem |
 | **Qualquer monitor sobre `kubernetes_state.*`** | Não existe (L1) |
-| **Timeouts e falta de memória da Lambda em monitores próprios** | Redundantes com M7 |
+| **Timeouts e falta de memória da Lambda em monitores próprios** | Redundantes com o monitor de erros de execução da Lambda |
 
 ---
 
@@ -317,10 +317,10 @@ e `metrics-server` como se fossem defeito da aplicação (L7).
 
 O procedimento operacional completo está no [Runbook](runbook.md). Em resumo:
 
-1. **Latência (M3)** — após uma semana com tráfego representativo, ler p95 e p99 reais no dashboard de API e
+1. **Latência** — após uma semana com tráfego representativo, ler p95 e p99 reais no dashboard de API e
    ajustar os limiares para **2×** e **4×** o p95 observado, em Pull Request próprio cuja descrição cite os
    valores medidos.
-2. **Contagem (M2, M4, M8)** — comparar os limiares com o volume real de 5xx observado na semana. Se algum
+2. **Contagem** — erros 5xx, falhas no fluxo de ordens de serviço e falha de envio de e-mail: comparar os limiares com o volume real de 5xx observado na semana. Se algum
    disparou por falso positivo, subir o limiar; se um incidente real passou sem alerta, descer.
 3. **Todo ajuste é Pull Request**, com o valor observado na descrição. Um limiar sem justificativa registrada
    é um número inventado, e a próxima pessoa não saberá se pode mexer.

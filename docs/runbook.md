@@ -55,7 +55,7 @@ avisando que o alvo ainda não existe.
 
 **Este é o passo esquecido.** Deixar `ENVIRONMENT_ONLINE` em `true` depois de destruir o ambiente reintroduz
 exatamente o ruído que o desenho eliminou: o teste continua executando contra um endereço inexistente,
-consumindo cota, e M1 dispara quatro e-mails para quatro pessoas ao fim de toda sessão. Alguns dias disso e o
+consumindo cota, e o alerta de disponibilidade dispara quatro e-mails para quatro pessoas ao fim de toda sessão. Alguns dias disso e o
 time aprende a ignorar todos os alertas — o oposto do objetivo deste repositório.
 
 Dashboards, monitores e configurações de métrica **não** precisam ser destruídos: eles não consomem recurso do
@@ -65,7 +65,7 @@ laboratório e não têm custo enquanto não há dado fluindo.
 
 ## O que fazer quando cada monitor dispara
 
-### M1 · Disponibilidade externa — rota pública indisponível · **P1**
+### Disponibilidade externa · rota pública indisponível · **P1**
 
 A rota `/api/health/ready` falhou em ao menos duas das três localidades por mais de dois minutos.
 
@@ -79,7 +79,7 @@ A rota `/api/health/ready` falhou em ao menos duas das três localidades por mai
    entrega do gateway.
 5. Se os pods estão de pé e o endereço está certo, siga para o dashboard de API: latência e erros.
 
-### M2 · API — Erros 5xx acima do limite · **P2**
+### API · Erros 5xx acima do limite · **P2**
 
 1. Abra o [dashboard de API](dashboards.md#oficina-mecânica--api). A **tabela de rotas** diz se o problema é de
    uma rota ou geral.
@@ -88,9 +88,9 @@ A rota `/api/health/ready` falhou em ao menos duas das três localidades por mai
 3. Grupo **Banco**: `pending_requests` subindo indica saturação de pool, que se manifesta como 5xx por tempo
    esgotado.
 4. Grupo **Runtime**: `nodejs.eventloop.delay.p99` alto indica bloqueio de event loop.
-5. Se M4 disparou junto, o impacto atinge o fluxo de negócio — priorize.
+5. Se o alerta de ordens de serviço disparou junto, o impacto atinge o fluxo de negócio — priorize.
 
-### M3 · API — Latência p95 acima do alvo · **P3**
+### API · Latência p95 acima do alvo · **P3**
 
 1. **Antes de tratar como incidente, verifique se o limiar é o problema.** Os valores são de percepção de
    usuário, não percentis observados — veja a calibração abaixo.
@@ -99,34 +99,34 @@ A rota `/api/health/ready` falhou em ao menos duas das três localidades por mai
 4. Grupo **Runtime**: event loop e heap.
 5. Dashboard de Kubernetes: **estrangulamento de CPU** sustentado explica latência sem explicar erro.
 
-### M4 · Ordens de Serviço — Falhas no processamento · **P2**
+### Ordens de Serviço · Falhas no processamento · **P2**
 
-O mesmo procedimento de M2, restrito às rotas de ordem de serviço e orçamento. A diferença é o público: aqui
+O mesmo procedimento do alerta de erros 5xx, restrito às rotas de ordem de serviço e orçamento. A diferença é o público: aqui
 há impacto de negócio nomeado, e a comunicação para fora do time é diferente.
 
-Se M2 e M4 dispararam juntos, é a mesma falha vista de dois ângulos. **Isso é esperado e está documentado**
+Se os dois alertas de erro dispararam juntos, é a mesma falha vista de dois ângulos. **Isso é esperado e está documentado**
 como redundância assumida.
 
-### M5 · Pod — Memória próxima do limite · **P2**
+### Pod · Memória próxima do limite · **P2**
 
 1. Dashboard de Kubernetes, grupo **Memória**: qual pod, e a curva é crescimento contínuo ou pico?
 2. **Crescimento contínuo sem platô é vazamento.** Grupo **Runtime** do dashboard de API: `v8js.memory.heap.used`
    acompanha?
-3. Em `critical` (90 %), o encerramento por falta de memória é iminente. Se M6 disparar em seguida, ele
+3. Em `critical` (90 %), o encerramento por falta de memória é iminente. Se o alerta de reinícios disparar em seguida, ele
    aconteceu.
 4. Mitigação imediata: reiniciar o deployment. Correção: investigar o vazamento ou subir o limite no
    repositório `oficina-mecanica-app`.
 
-### M6 · Pod — Reinícios de contêiner · **P3**
+### Pod · Reinícios de contêiner · **P3**
 
 1. Dashboard de Kubernetes, grupo **Ciclo de vida**: quantos pods e com que frequência.
-2. **M5 disparou antes?** Então foi encerramento por falta de memória.
+2. **O alerta de memória disparou antes?** Então foi encerramento por falta de memória.
 3. Reinício logo após uma entrega é provavelmente falha de inicialização — verifique os logs do pod.
 4. Reinícios repetidos no mesmo pod indicam `CrashLoopBackOff`.
 5. Um reinício isolado logo após provisionamento pode ser normal; `new_group_delay` de 600 s existe para
    filtrar a maior parte disso.
 
-### M7 · Lambda customer-auth — Erros de execução · **P2**
+### Lambda customer-auth · Erros de execução · **P2**
 
 1. **Qualquer erro aqui é defeito.** A função devolve 401 como resposta normal de credencial inválida; erro de
    plataforma é outra coisa.
@@ -136,17 +136,17 @@ como redundância assumida.
    falta de memória. Ambos incrementam `errors`.
 5. Sem traces na função (L4): os logs são a única evidência.
 
-### M8 · Integrações — Falha de envio de e-mail · **P4**
+### Integrações · Falha de envio de e-mail · **P4**
 
 1. A mensagem nomeia a **categoria** do erro, e ela decide a ação: credencial recusada é configuração, tempo
    esgotado é rede, endereço inválido é dado.
 2. P4 significa que isto **não interrompe o fluxo principal**: a ordem de serviço avança, a notificação não sai.
 3. O link de logs da mensagem já está filtrado no evento.
 
-### M9 · Dependência — Health check degradado · **P3**
+### Dependência · Health check degradado · **P3**
 
 1. A mensagem nomeia a **categoria da dependência** que falhou.
-2. Se a dependência for o banco, M2 e M3 provavelmente dispararão em seguida — trate a causa aqui.
+2. Se a dependência for o banco, os alertas de erro e de latência provavelmente dispararão em seguida — trate a causa aqui.
 3. É o único sinal que nomeia a dependência: a rota de saúde não é observável por métrica nem trace (L3).
 
 ---
@@ -155,7 +155,7 @@ como redundância assumida.
 
 Fazer **depois de uma semana com tráfego representativo**, não antes.
 
-### Latência (M3)
+### Latência
 
 1. Dashboard de API, grupo **Latência**, janela de 7 dias. Leia o **p95** e o **p99** típicos, ignorando picos
    de provisionamento.
@@ -165,7 +165,7 @@ Fazer **depois de uma semana com tráfego representativo**, não antes.
 4. **Abra Pull Request citando os valores observados na descrição.** Um limiar sem justificativa registrada é
    um número inventado, e a próxima pessoa não saberá se pode mexer.
 
-### Contagem (M2, M4, M8)
+### Contagem — erros 5xx, ordens de serviço e envio de e-mail
 
 1. Some os 5xx reais da semana no dashboard de API, por rota.
 2. Se algum monitor disparou por falso positivo, suba o limiar. Se um incidente real passou sem alerta,
@@ -180,7 +180,7 @@ Fazer **depois de uma semana com tráfego representativo**, não antes.
 3. Se a cota apertar, acione a alavanca: remova `http.response.status_code` da lista de tags de
    `http.server.request.duration` em `terraform/metrics.tf`. Isso derruba a estimativa de ~960 para ~160, e
    move "erro por rota" para os logs.
-4. **Consequência a considerar antes**: M2 e M4 perdem a base de métrica e teriam de virar monitores de log.
+4. **Consequência a considerar antes**: os monitores de erros 5xx e de ordens de serviço perdem a base de métrica e teriam de virar monitores de log.
 
 ---
 

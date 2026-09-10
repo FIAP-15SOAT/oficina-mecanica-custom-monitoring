@@ -207,7 +207,7 @@ em uso nos cinco repositórios, e o laboratório é destruído ao fim de cada se
 | CI reprova em `Validate the telemetry application key` | `DD_APP_KEY` não configurado | Criar o secret de repositório — inventário acima |
 | CI conclui com `Terraform plan — skipped ⏭️` no resumo | Credenciais AWS expiradas | Normal com o laboratório fora. Renovar os segredos e reexecutar para ver a prévia |
 | `plan` falha com `This object does not have an attribute named "api_endpoint"` | Gateway destruído: o state existe, mas sem outputs | Subir o laboratório e entregar o gateway antes deste repositório |
-| `plan` falha com `missing_aggregation :: AGG_AVG/AGG_P95` | A configuração de tags da métrica ainda não foi aplicada | É esperado na primeiríssima execução; o `depends_on` de M3 cobre a ordem no `apply` |
+| `plan` falha com `missing_aggregation :: AGG_AVG/AGG_P95` | A configuração de tags da métrica ainda não foi aplicada | É esperado na primeiríssima execução; o `depends_on` do monitor de latência cobre a ordem no `apply` |
 | `apply` falha na trava do state | Outra execução em andamento | Aguardar. `cancel-in-progress: false` é proposital |
 | Monitores criados e ninguém recebe e-mail | `ALERT_EMAILS` vazio ou mal formado | O CD valida antes do `apply`; conferir a variable |
 | Teste sintético executando com o ambiente fora | `ENVIRONMENT_ONLINE` ficou `true` | Ajustar a variable e reexecutar o CD |
