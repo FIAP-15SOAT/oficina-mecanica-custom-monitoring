@@ -41,8 +41,13 @@ O critério que sai daí é um só, e é aplicado a cada candidato:
 | Integrações · E-mail | Falha de envio de e-mail | P4 |
 | Dependência | Dependência degradada | P3 |
 
-**Nenhum monitor tem `notify_no_data` ligado.** Todos os de contagem tratam janela vazia como zero. É essa
-propriedade que torna seguro desligar o ambiente.
+**Nenhum monitor tem `notify_no_data` ligado**, e é essa opção que torna seguro desligar o ambiente.
+
+Vale registrar o que a verificação em produção mostrou, porque a formulação original deste ADR era imprecisa:
+uma janela vazia avalia como zero **apenas quando a série existe**. Quando ela nunca existiu — nenhum 5xx,
+nenhum erro de plataforma na Lambda — o destino reporta `No Data`. Com a solução saudável, três dos nove
+monitores ficam em `No Data`. Nenhum notifica, mas por causa de `notify_no_data = false`, não por aritmética
+de contagem.
 
 **Nenhum monitor tem `renotify_interval`.** Não há plantão para escalar, e repetir o alerta a cada N minutos
 transforma a caixa de entrada em algo que se filtra.

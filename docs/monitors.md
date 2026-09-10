@@ -23,8 +23,16 @@ Aplicada aos nove, e cada item tem razão:
 | `notify_by` | **não usado** | O destino recusa uma lista que cubra *todos* os agrupamentos da consulta — `The notify_by list may not include all of the query's group keys` — e os monitores agrupados aqui têm uma única chave de agrupamento. O comportamento pretendido, uma notificação por rota ou por pod afetado, **já é o padrão** de um monitor agrupado |
 | `tags` | `project:oficina-mecanica`, `managed-by:terraform`, `env:…`, `service:…` | Ver [Convenções](conventions.md) |
 
-**Contagem vazia é zero.** Todos os monitores de erro e de negócio são baseados em contagem, e uma janela sem
-eventos avalia como zero, não como ausência de dado. É o que torna seguro desligar o ambiente.
+**O que acontece quando não há evento — medido, não suposto.** Há dois casos, e eles são diferentes:
+
+- **A série existe e a janela está vazia** → avalia como **zero**. É o caso de um monitor de log cuja consulta
+  já retornou algo antes.
+- **A série não existe** — nenhum 5xx jamais ocorreu, nenhum erro de plataforma na Lambda — → o destino
+  reporta **`No Data`**, e não zero. Verificado na conta: os monitores de erros 5xx, de falhas no fluxo de
+  ordens de serviço e de erros da Lambda ficam em `No Data` com a solução saudável.
+
+**Nos dois casos nada é notificado, e é `notify_no_data = false` que garante isso** — não a aritmética da
+contagem. É essa opção, e só ela, que torna seguro desligar o ambiente.
 
 ### Estrutura da mensagem
 
@@ -232,9 +240,11 @@ sum(last_10m):sum:aws.lambda.enhanced.errors{functionname:lbd-oficina-mecanica-c
 | --- | --- | --- | --- | --- |
 | — | > 0 | 10 min | nenhum | **`false`** |
 
-**Escopado por `functionname` e não por `env`.** A função emite `env:prod-simulated` e a API emite
-`env:production` (L8). O `functionname` funciona antes e depois da unificação, então o Pull Request que
-unifica `DD_ENV` **não é pré-requisito** deste monitor.
+**Escopado por `functionname` e não por `env`.** Até a unificação de `DD_ENV`, a função emitia
+`env:prod-simulated` enquanto a API emitia `env:production` (L8). O `functionname` funciona antes e depois
+dessa correção — foi o que permitiu que o monitor não dependesse dela. **A unificação já foi integrada** e a
+função emite `env:production`, mas o escopo continua por `functionname`: é o identificador estável da função,
+e não há segunda função a distinguir.
 
 **Alerta em qualquer erro** porque a função devolve 401 como resposta normal de credencial inválida: erro de
 plataforma é sempre defeito. Monitores separados para expiração de prazo (`timeouts`) e falta de memória
