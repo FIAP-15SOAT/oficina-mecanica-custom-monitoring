@@ -35,12 +35,6 @@ terraform.rc
 *.drawio
 *.drawio.bkp
 
-# Evidencias de validacao: capturas de tela, e-mails de alerta exportados.
-# Servem a uma conversa, nao ao repositorio.
-evidencia*
-*.eml
-*.msg
-
 CLAUDE.md
 .claude
 .codex
