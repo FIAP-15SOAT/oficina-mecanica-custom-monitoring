@@ -1,0 +1,456 @@
+Received: from BL4PR11MB8872.namprd11.prod.outlook.com (::1) by
+ DM3PPFCBDC4B878.namprd11.prod.outlook.com with HTTPS; Thu, 10 Sep 2026
+ 06:13:21 +0000
+Received: from MN2PR01CA0044.prod.exchangelabs.com (2603:10b6:208:23f::13) by
+ BL4PR11MB8872.namprd11.prod.outlook.com (2603:10b6:208:5a8::16) with
+ Microsoft SMTP Server (version=TLS1_2,
+ cipher=TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384) id 15.21.406.9; Thu, 10 Sep
+ 2026 06:13:19 +0000
+Received: from BN7PEPF000000A7.namprd05.prod.outlook.com
+ (2603:10b6:208:23f:cafe::67) by MN2PR01CA0044.outlook.office365.com
+ (2603:10b6:208:23f::13) with Microsoft SMTP Server (version=TLS1_3,
+ cipher=TLS_AES_256_GCM_SHA384) id 15.21.406.8 via Frontend Transport; Thu, 10
+ Sep 2026 06:13:19 +0000
+Authentication-Results: spf=pass (sender IP is 167.89.26.167)
+ smtp.mailfrom=em6080.dtdg.co; dkim=pass (signature was verified)
+ header.d=dtdg.co;dmarc=pass action=none header.from=dtdg.co;compauth=pass
+ reason=100
+Received-SPF: Pass (protection.outlook.com: domain of em6080.dtdg.co
+ designates 167.89.26.167 as permitted sender)
+ receiver=protection.outlook.com; client-ip=167.89.26.167;
+ helo=o1.sendgrid.dtdg.co; pr=C
+Received: from o1.sendgrid.dtdg.co (167.89.26.167) by
+ BN7PEPF000000A7.mail.protection.outlook.com (10.167.245.231) with Microsoft
+ SMTP Server (version=TLS1_3, cipher=TLS_AES_256_GCM_SHA384) id 15.21.406.5
+ via Frontend Transport; Thu, 10 Sep 2026 06:13:19 +0000
+X-IncomingTopHeaderMarker: OriginalChecksum:FE29209B3CF3A29D0D201BDE1221D3CCAB7C399BBFBC76711A14E1F5291DFDEF;UpperCasedChecksum:D7DE1028269E2B11370F8016D502C3587FEB26245301912181BF1889886F7092;SizeAsReceived:2767;Count:13
+DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed; d=dtdg.co;
+	h=content-type:date:from:mime-version:subject:to:cc:content-type:date:
+	from:subject:to;
+	s=s1; t=1789020798;
+	bh=qiQdF7MpLBbTbk57HNMkbTKjV1sGDbJTXZP3rO6GltE=;
+	b=38S6XEosIPvOiBy0jlVhPydyhUS0aAJYevfS7vawesczHk+Ywvbi4M8d3nro0EBHZZDy
+	Z2uZCJZOEh2zsncElJt8zqiOKq6DtnsR6Pae18/z2Hd8T7TTy+EQF2oYSj5+FvrSFPT1nq
+	XPFR65Qh2O8dfilSTjywpTsm07jW1X6DgB+6PF/0UAca57XSb2AcwcQUdUYjRj3nAn2apR
+	lZ812jGp2iq4TB0j80o4fraa9/WwB5lse7t+l/XpYNP0AJDElQJk79wSSzhNogjRmFVXH+
+	Bfvomg+Onk6z0y4AJMlbFhlaTOMdLMRooxFw7y3+keUyadYukDgevVNjNvaDlKBQ==
+Received: by recvd-7456777fb5-5qbtj with SMTP id recvd-7456777fb5-5qbtj-1-6AA24A7E-22
+	2026-09-10 06:13:18.566684198 +0000 UTC m=+3756067.237113569
+Received: from MTMzMDE3OA (unknown)
+	by geopod-ismtpd-2 (SG) with HTTP
+	id dNJIlpvbQQeEo8-RXXcHEA
+	Thu, 10 Sep 2026 06:13:18.503 +0000 (UTC)
+Content-Type: multipart/alternative; boundary=07579430efb32501bcc7896550cc309a2b055f8107c70cdae16231ef2684
+Date: Thu, 10 Sep 2026 06:13:18 +0000 (UTC)
+From: Datadog Alerting <alert@dtdg.co>
+Message-ID: <dNJIlpvbQQeEo8-RXXcHEA@geopod-ismtpd-2>
+Subject: [P3] Triggered: [Oficina
+ =?UTF-8?B?TWVjw6JuaWNhXSBQb2QgwrcgUmVpbsOtY2lvcw==?= de
+ =?UTF-8?B?Y29udMOqaW5lcg==?= on pod_name:oficina-api-5487bb8cf5-j2w4d
+X-SG-EID: =?us-ascii?Q?u001=2EW45NPsqb4j6UBSDFGYpRtLlTIZXp7OwEMo=2FZdEUhc=2FW1g=2F9DCkq=2FIYuup?=
+ =?us-ascii?Q?9d31PcTeBAPtlSs=2F97i9l0nOWIugMwR96QOrH1b?=
+ =?us-ascii?Q?8Bh7Pf5ttxx6Nrj=2FrPev3VhPwmvHH5ycWh=2FqR8P?=
+ =?us-ascii?Q?ATRF5BkgIQV6OEM5DglFH2XgteWK6sz0WKqz4Dj?=
+ =?us-ascii?Q?jbzynSVySPk=2FEYgG8N5YYRBr+E7j5uZ4KqIl8CD?=
+ =?us-ascii?Q?zyqaUlNB5=2F+MFJpl=2FMjEO6S5SrmUfKcg++iDJ9v?=
+ =?us-ascii?Q?2EII?=
+X-SG-ID: =?us-ascii?Q?u001=2ESdBcvi+Evd=2FbQef8eZF3BmT3quS635KcOpGYu=2FBWi=2F3o4NQTkBny7ms=2FP?=
+ =?us-ascii?Q?KDuilWw+WQU4ndvOgF2=2Fd0mIbin1oXd6y+wfwkC?=
+ =?us-ascii?Q?24KAPufhpwC08ZUqKnP1S4WngNg3noBtT8FZ3hQ?=
+ =?us-ascii?Q?ril30ejk2KbkxNN0K4Jq=2FNzokm6oyvoz+cinBBy?=
+ =?us-ascii?Q?WkVmeWKMjeeEP2yO6axa2ePIlmMGJc0Fcngak3I?=
+ =?us-ascii?Q?+UM4nDsTLGFuXUVkf6F3XJ4o6BqMoln=2FjTDVsdd?=
+ =?us-ascii?Q?XoLgkgPCElbce3Hwv98w9djX68GPrr0WVIJUJDl?=
+ =?us-ascii?Q?zx3yvB3mJQHwcbHNF33NFD19yGm7sS=2FVqBRjGCU?=
+ =?us-ascii?Q?SOG8VdhO=2FQJtXJrOqMWaF+1l6vgTb7eCSXueg+h?=
+ =?us-ascii?Q?K+ALHAmvAhXCIhJiX=2F55jeo31LOqpSppGRBvjCC?=
+ =?us-ascii?Q?xyw10ma2vEPPKrPnihZUUmYEsG9j=2FwG1yh6DsVd?=
+ =?us-ascii?Q?Cw4dvgB=2F5rlA+W1IuPW0ta2GxJKwCOh4r4+0yKW?=
+ =?us-ascii?Q?BpirjKeyCkul4FZfWbOX1FCWEl3QU+gnLq7yF+r?=
+ =?us-ascii?Q?1zLQaYh305Yf6VLSQsq7WNmmRuF9e6nVmGZ9KtM?=
+ =?us-ascii?Q?oXmYad5Sf=2FlGqbtF4Ha3y2isFT41CLY=2FOw=3D=3D?=
+To: Lucas Almeida Backpack <lucas.almeida-silva@hotmail.com>
+X-Entity-ID: u001.QUDVpbabfYp1c8L3l/w8fg==
+X-IncomingHeaderCount: 13
+Return-Path: bounces+1330178-b386-lucas.almeida-silva=hotmail.com@em6080.dtdg.co
+X-MS-Exchange-Organization-ExpirationStartTime: 10 Sep 2026 06:13:19.8744
+ (UTC)
+X-MS-Exchange-Organization-ExpirationStartTimeReason: OriginalSubmit
+X-MS-Exchange-Organization-ExpirationInterval: 1:00:00:00.0000000
+X-MS-Exchange-Organization-ExpirationIntervalReason: OriginalSubmit
+X-MS-Exchange-Organization-Network-Message-Id: dc218158-f1b5-4aba-9630-08df0f029c6e
+X-EOPAttributedMessage: 0
+X-EOPTenantAttributedMessage: 84df9e7f-e9f6-40af-b435-aaaaaaaaaaaa:0
+X-MS-Exchange-Organization-MessageDirectionality: Incoming
+X-MS-PublicTrafficType: Email
+X-MS-TrafficTypeDiagnostic: BN7PEPF000000A7:EE_|BL4PR11MB8872:EE_|DM3PPFCBDC4B878:EE_
+X-MS-Exchange-Organization-AuthSource: BN7PEPF000000A7.namprd05.prod.outlook.com
+X-MS-Exchange-Organization-AuthAs: Anonymous
+X-MS-UserLastLogonTime: 9/10/2026 6:11:08 AM
+X-MS-Office365-Filtering-Correlation-Id: dc218158-f1b5-4aba-9630-08df0f029c6e
+X-Sender-IP: 167.89.26.167
+X-MS-Exchange-EOPDirect: true
+X-SID-PRA: ALERT@DTDG.CO
+X-SID-Result: PASS
+X-MS-Exchange-Organization-SCL: 5
+X-Microsoft-Antispam: BCL:4;ARA:1444111002|3069299007|5149299006|5139299004|68400799013|3151999006|9400799043|58200799025|47200799027|260826003000599003|1680799066|970799063|10300799038|9000799056|1122599022|18021999003|3412199025|440099028|4302099013|1370799030|1360799030|1380799030|1602099012|2607281247196008|5090599003|30041999003;
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 10 Sep 2026 06:13:19.6655
+ (UTC)
+X-MS-Exchange-CrossTenant-Network-Message-Id: dc218158-f1b5-4aba-9630-08df0f029c6e
+X-MS-Exchange-CrossTenant-Id: 84df9e7f-e9f6-40af-b435-aaaaaaaaaaaa
+X-MS-Exchange-CrossTenant-AuthSource: BN7PEPF000000A7.namprd05.prod.outlook.com
+X-MS-Exchange-CrossTenant-AuthAs: Anonymous
+X-MS-Exchange-CrossTenant-FromEntityHeader: Internet
+X-MS-Exchange-CrossTenant-RMS-PersistedConsumerOrg: 00000000-0000-0000-0000-000000000000
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BL4PR11MB8872
+X-MS-Exchange-Transport-EndToEndLatency: 00:00:01.5135552
+X-MS-Exchange-Processed-By-BccFoldering: 15.21.0406.000
+X-Microsoft-Antispam-Mailbox-Delivery:
+	ucf:0;jmr:0;ex:0;auth:1;dest:J;OFR:SpamFilterAuthJ;ENG:(5062000311)(920221119095)(90000117)(920221120095)(90005022)(91005020)(91035115)(9050020)(9100341)(944500132)(2008001181)(2008121020)(4810010)(4910033)(9610028)(9560006)(10180024)(9320005)(9245025)(120001);RF:JunkEmail;
+X-Message-Delivery: Vj0xLjE7dXM9MDtsPTA7YT0wO0Q9MjtHRD0xO1NDTD02
+X-Microsoft-Antispam-Message-Info:
+	=?utf-8?B?Nzl4VE85YWxWa0UvbzJKV2VnTnJUbTFOMzJWZ09RcEVyOCtWUjVSTkxsNGdH?=
+ =?utf-8?B?YnEvcDdNbkFiRGNGZUZncSs0UVFxWGRETzN3UVVsUnZCYTVwdW5nQUQ5MjFz?=
+ =?utf-8?B?VVM1WDJUTGtzSnN6WlhEYm9DOFMxZWMwaEZMUDVmbExobU1iMTlOU3FlN1pm?=
+ =?utf-8?B?NjE2MzhhM21zY3p5bnc4Tmo0ZTU3Tmk2ZVRySi9OV3A3N1ZlYXdNTzBMd2Nw?=
+ =?utf-8?B?ZGFZazIyN2l6cWtPaFBvRWNIQnBFRnhkOXVVSWNmeXFOQVlVcmliOENkeUR4?=
+ =?utf-8?B?V3lQQkJTMHRCZzgrK1Q5UXNKSndyZjBTMWdiZlpYc05PcTNrSkExeGkrL2tz?=
+ =?utf-8?B?Q1d5NS9hOU93eTVsY0lZdml2VTR5cTIxKy9TWjZvR2J3eWdLSGkwVVhnckM4?=
+ =?utf-8?B?a05mZ05icXpRQndXVi9mZHQ5ZGpWNmNTbkY0em1VaW54ampRZkg3Q0tTS1JZ?=
+ =?utf-8?B?enlEZk5TQXNFeDlkVXZMZ0hyb1JYOXRZb3ZLYTVZeVUzVGFIMFp3Z3ZodTR4?=
+ =?utf-8?B?cmVXcFNIcUdycUIrUTBEcHZObi8yMnJCUTB5S3lNMmFNY05Nb3IrandIRGtO?=
+ =?utf-8?B?NnZnT1A3b1l6Nk1tREpPd2c0VlFGMFZocUtFQWdPTTFzd2V1SEVsSTZQV3dJ?=
+ =?utf-8?B?VW9HVXB3VEpjb2tpS1lyQ0tIQ09aSDA3RXVvTHBMSTZRRnYrYXBlQXJTVGxV?=
+ =?utf-8?B?Y0Fab0NDL0hIQXNFTkw3OVo0cStXRzhnWjR3V0RkcSszWVNYNTdWdmdVekZT?=
+ =?utf-8?B?ckNlTXhGR3R4L2liUkh2ekhDRTlNNWh1WXZDVFJHU2JGbk8zUjF5WmhYL2FD?=
+ =?utf-8?B?U0tmNHBnVFBTS0I0R3BZSjNTTXJjWGZMOWNxMlJ3c3VxaEEyb0hJT0lpM1Fi?=
+ =?utf-8?B?S2s1bk5xWEdSd3J4NzkxbmRCS01qV2p3WjVYTmkwL2VnS1VQMmlsblVkc1RO?=
+ =?utf-8?B?NW9lZWJZUkNXUlEwaEZvWitCeCtLWDI5TDJsMTBaUHFtMmFYM21GQ3UvYWlO?=
+ =?utf-8?B?K3FlRkJXeDB5bVN5OHQ1MUtGTUxFLzhwVUdReit3bHNvS1BqY3NVUnJiSFhr?=
+ =?utf-8?B?WDNRNXVpRmNnenVWWXV5Sk0wRi81aS9qZE5MMUo1MThFdHhYVVNaWUs1cVpF?=
+ =?utf-8?B?QTROeG52RmpWQ3UzVE80Y1RYTzdUeTQyOTBCUm44QVNWR1BNa1paUGEyM1Uv?=
+ =?utf-8?B?c3dLMFBrV3o0dEVRVDArcGRFWCtBZnhBSXZ6RkpOQTFXSUt4MzduNnlTVFI5?=
+ =?utf-8?B?UGQwRmNMQzk3YWI3QWV6SEhLM0dIL2ZoOUlOR21lRjBuZmJxVjluN25vTnNT?=
+ =?utf-8?B?dVRTRkduMmZKc2xORGgxR1RPTTJWMCsxaGM3blg2V21SSUg0UUpuLzhnS3lQ?=
+ =?utf-8?B?VjN6TDIyc1hla0JWT0tWUkI2QXdQK0ZSbkZSOWFqY1RaYkdvTWFnWHE5K29p?=
+ =?utf-8?B?STRqMlVMaVdFaWJVS3o3THNMZ0Mxcm9XTHFCWXZMekZvWEdtOWdIQ2lwTElt?=
+ =?utf-8?B?Wmw4eVlrdTlIUG1zbnBZb1RiQTJQaVUrcmtHWGV6M1ptaVhtRzFRcWRLVmxq?=
+ =?utf-8?B?aXFGYzBWNFdINEFycmdkdlhoM0IvVXBJdjgyemNkcnZGRDdrZWNGL0c3Mmpy?=
+ =?utf-8?B?cmJCSHB5eTZLZVRqaDJXWkZSc2xURzY0aUhNNjA5QmJoU1R5QUhocW9FNjhh?=
+ =?utf-8?B?UXZLYTg3Nko5WnpRc1c1amhaN2FwRHQyeWsxU0ZiM2VjNE5kWWErNm0zTXd6?=
+ =?utf-8?B?MUlnYldZanpRWjZPZXk0NXRmQnNzci9mZHduV2VyejRwUW9Xb3M4ZzNKRmtU?=
+ =?utf-8?B?UGtxVEFBMXRUM2Y4ZW9QRkVlNllzOUxBamlHUGNyQjBrdis3eW53eStuaHoy?=
+ =?utf-8?B?bnNZU0pGeW13TVZBNFVhUDVFUGFNVGtYVFlOdVpCRTJhTTJudjJ0aXdQNnNV?=
+ =?utf-8?B?R0MveXcvWXYvUE1EbjlaY1NxM3drcDlPeVRHK091NG82SXpkcnA5bUFJaWY2?=
+ =?utf-8?B?VUYwUGthRXBQWVFpL1JrTmNlSjFWN2VEakVBYjNyM2k2OTlBMXRwdW1BbVFy?=
+ =?utf-8?B?b1FVSytaeWt4c2NCcmVQQWkwY2ltVHlvUGlJZEJDU3VJNENLS0RKdzEycHVm?=
+ =?utf-8?B?NTVPSkQvK3FhU1pqOGNScmY2OHBaSXBiZjNPUjJJNWRRa21QZUV2SytFN2pp?=
+ =?utf-8?B?RTlUdk1ON1Nqb2ZCVStaRW95cytuZnEwV3J5Qit1bkg5WTdrY1ZPM1kwL3Zp?=
+ =?utf-8?B?V25BeHNvUm5LMXNKYjhrSXZ6Wk85aGRKek1udklBL1Q2UmorN3N0RHNNY0hV?=
+ =?utf-8?B?SEhxd3VhSEZqdnlURUhCRnBzd0wvbHlpSC8reDc2SXNiOFp4UCtHTmFXNU9N?=
+ =?utf-8?B?djhFa1diY3FJVXd6eS9SeTU1WmdRQ3Q2NjlRRUdMQXQxSGZIU2RMTDdnZ01I?=
+ =?utf-8?B?SVVOVjJ1SWZiblJZNkd4cDg1UVN6dXVXWDFOOUlnbnBnV1A4aVRrZGJkRW9T?=
+ =?utf-8?B?UUlzcDFxalV0aGpvU2VrdUN2L3pMdU56a2xxaEJRR0ZHR0FxT24weVZ4S2JF?=
+ =?utf-8?B?SmljUVdHMlJKNytkdnVyeSsrT2diWDlPQmJtVW5uTnk2NzJnTDlTK2Q4OUtq?=
+ =?utf-8?B?ejNlQy90NW0wMlVnTEphWHFkaGdhNk5HbHBhMEpLdU9TWGdEbVUwUENmZlZj?=
+ =?utf-8?B?M2Z4cGRML21Sa2NoL1prNTcydWdhWXRYZHc1VFM4TVV5a3Y5eUkyNWt4OE1x?=
+ =?utf-8?B?OVN2Y2FGS2JrRTNpZkNpR2paMStFaVYzOWRQbVRSNUpyeUpLVGdCalp2K0cz?=
+ =?utf-8?B?eisvZVJVd3dYSllDWEdzVldBWnl4STdNWmtKZ3VDbTdydmNzaG4za0NNVlBI?=
+ =?utf-8?B?cm9VVE5WL1orYzA1ODhHVHcxQWpFYnVzcWZpTmkvSDgzSU5oTzJrcytiWUFP?=
+ =?utf-8?B?V2N1bkxKbERoYW1yQy9rYkRZY1BveFAwZmFPRjlqWW84Uzg1YnY4RjBzSjF5?=
+ =?utf-8?B?RWdDQmxjRVBkakpFeEllckk3cEQvenRrTFE1K3RXUkdiczE1ZFp0ei9oMDd6?=
+ =?utf-8?B?R1E1d1BwU1RHamxBZWRYR29PTGxPYVYrRzc0NitQMFNjQ1FxTExyU1ByQnQ4?=
+ =?utf-8?B?S1R3QjJNT2RtL1RxNVZoVWxPb1EwWEdsVFVIdHkxVU1JZjBXUlAxSjhvT3hu?=
+ =?utf-8?B?VlZBTGNjVGZidmNFbktmTmpKNSs2T2FBbWhrZ0xVNDZTckhiZUpRSDB6UWJn?=
+ =?utf-8?B?VlMrYmFGdVFNajBMS0JVUHIrY3VaTjVBU1hGZ2JrWHNqT0Y1WThFR3NlYVJQ?=
+ =?utf-8?B?R2JuV1hOb0h4dklyZ09ldWExWm55ZzdDZFk4b25nS3ZwUGRvdFVBTVhsVWlx?=
+ =?utf-8?B?R2ptUXNIa0g3MEprL1UwZXdHWlNUaFhsVkxFK2lvK3hkSTVobEIva1dJZGZX?=
+ =?utf-8?B?UjRPa0VhL1lzR1FYMlpLSERaRkg4aVA5QkV1Q3dpOGFHdnVsVTdub1V0VXFL?=
+ =?utf-8?B?c0FRVXpPOGxpRUdORTNINUN4d3dxTlJaTlM2M0hpYjl5R0YwUXF0TVFXWkxs?=
+ =?utf-8?B?VFRzOHY4TWF4VjExRGdBUVdNT3NzUDFNa1FxYjZTbUduYXZFb01GSGk4VjNX?=
+ =?utf-8?B?K3ZqcnpNQXZLZmt2YXo4SGZ2djRUUTFmWkRtM2ROVzdwZWJyNm0zUmZINlI3?=
+ =?utf-8?B?Zk0waXBxV3RUc3VuQVdDaG1HLzBmMWY2dTVrYWlUZ2pDRXFPdXMxQmF2TDR6?=
+ =?utf-8?B?N043UWNkRVpOTXJsMmZLQTJTenhUZGlDRjZXdm9NLzFTYytjNS9ubHYzTUxr?=
+ =?utf-8?Q?EAzfo/AxQnYctsgqY3cCeKV0oM?=
+MIME-Version: 1.0
+
+--07579430efb32501bcc7896550cc309a2b055f8107c70cdae16231ef2684
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset=utf-8
+
+[P3] TRIGGERED: [OFICINA MEC=C3=82NICA] POD =C2=B7 REIN=C3=8DCIOS DE CONT=
+=C3=8AINER ON POD_NAME:OFICINA-API-5487BB8CF5-J2W4D
+
+
+
+=F0=9F=94=B4 Cont=C3=AAiner reiniciou =E2=80=94 pod oficina-api-5487bb8cf5-=
+j2w4d
+
+Servi=C3=A7o: oficina-mecanica-api =C2=B7 Ambiente: production
+Observado: 0.1 rein=C3=ADcios na janela (limite: 0.0) na janela de 10 min
+Desde: 2026-09-10 06:12:16
+
+Dashboard https://app.us5.datadoghq.com/dashboard/wa8-aqr-3pv/oficina-mecni=
+ca--kubernetes =C2=B7 Logs https://app.us5.datadoghq.com/logs?query=3Dservi=
+ce%3Aoficina-mecanica-api+env%3Aproduction
+
+@lucas.almeida-silva@hotmail.com https://us5.datadoghq.com/account/profile/=
+85df56f7-2a9b-49d5-9103-2934a66274aa @ramooncamacho@hotmail.com @guilhermed=
+arochasalvador@gmail.com https://us5.datadoghq.com/account/profile/49dac4ba=
+-cd25-4cee-8ecd-9fe78304b0a6 @camacho.renan@gmail.com https://us5.datadoghq=
+.com/account/profile/97f3f69a-4044-4542-94bc-66636da457ce
+
+
+
+max(last_10m):diff(max:kubernetes.containers.restarts{kube_deployment:ofici=
+na-api} by {pod_name}) > 0
+
+
+
+
+
+View Event in Datadog https://us5.datadoghq.com/event/event?id=3D8803977161=
+653934973&start=3D1789020136000&end=3D1789020736000&utm_source=3Ddogmail&ut=
+m_medium=3Dmonitor_alert_notification&utm_campaign=3DMonitorAlertNotificati=
+on_0.0.1
+
+Monitor Status https://us5.datadoghq.com/monitors/22405036?group=3Dpod_name=
+%3Aoficina-api-5487bb8cf5-j2w4d&from_ts=3D1789019836000&to_ts=3D17890210360=
+00&event_id=3D8803977161653934973&link_source=3Dmonitor_notif&link_monitor_=
+id=3D22405036&link_event_id=3D8803977161653934973&link_event_ts=3D178902073=
+6&utm_source=3Ddogmail&utm_medium=3Dmonitor_alert_notification&utm_campaign=
+=3DMonitorAlertNotification_0.0.1=C2=B7Edit Monitor https://us5.datadoghq.c=
+om/monitors/22405036/edit?link_source=3Dmonitor_notif&link_monitor_id=3D224=
+05036&link_event_id=3D8803977161653934973&link_event_ts=3D1789020736&utm_so=
+urce=3Ddogmail&utm_medium=3Dmonitor_alert_notification&utm_campaign=3DMonit=
+orAlertNotification_0.0.1=C2=B7Related Logs https://us5.datadoghq.com/logs?=
+query=3D%28%28kube_deployment%3Aoficina-api%29%29+AND+pod_name%3Aoficina-ap=
+i-5487bb8cf5-j2w4d&from_ts=3D1789020136000&to_ts=3D1789020736000&live=3Dfal=
+se&link_source=3Dmonitor_notif&link_monitor_id=3D22405036&link_event_id=3D8=
+803977161653934973&link_event_ts=3D1789020736&utm_source=3Ddogmail&utm_medi=
+um=3Dmonitor_alert_notification&utm_campaign=3DMonitorAlertNotification_0.0=
+.1
+
+To manage your Datadog subscription, click here https://us5.datadoghq.com/a=
+ccount/preferences?utm_source=3Ddogmail&utm_medium=3Dmonitor_alert_notifica=
+tion&utm_campaign=3DMonitorAlertNotification_0.0.1
+This alert was raised by account Lucas Almeida Backpack
+=C2=A92026 Datadog Inc, 620 8th Ave, NYC
+--07579430efb32501bcc7896550cc309a2b055f8107c70cdae16231ef2684
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/html; charset=utf-8
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.=
+w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><!--$--><html dir=3D"ltr" lan=
+g=3D"en"><head>
+<meta http-equiv=3D"Content-Type" content=3D"text/html; charset=3Dutf-8"><m=
+eta name=3D"x-apple-disable-message-reformatting"><style>
+              html, body { margin: 0 !important; padding: 0 !important; }
+            </style><style>
+    @font-face {
+      font-family: '-apple-system';
+      font-style: normal;
+      font-weight: 400;
+      mso-font-alt: 'BlinkMacSystemFont';
+     =20
+    }
+
+    * {
+      font-family: '-apple-system', BlinkMacSystemFont, Segoe UI, Roboto, H=
+elvetica, Arial, sans-serif;
+    }
+  </style></head><body style=3D"background:transparent;background-color:tra=
+nsparent"><table border=3D"0" width=3D"100%" cellpadding=3D"0" cellspacing=
+=3D"0" role=3D"presentation" align=3D"center"><tbody><tr><td style=3D"backg=
+round-color:transparent;background:transparent"><table align=3D"center" wid=
+th=3D"100%" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" role=3D"presen=
+tation" style=3D"max-width:640px;background-color:transparent;border-style:=
+none;border-width:0;padding:16px;padding-left:0;padding-top:16px;padding-ri=
+ght:0;padding-bottom:16px;border-radius:0"><tbody><tr style=3D"width:100%">=
+<td><table width=3D"100%" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" =
+role=3D"presentation"><tbody style=3D"width:100%"><tr style=3D"width:100%">=
+<td align=3D"center" data-id=3D"__react-email-column" style=3D"padding-top:=
+8px;padding-bottom:24px"><img alt=3D"Datadog Logo" height=3D"60" src=3D"htt=
+ps://static.datadoghq.com/static/images/datadog-logo-125-white-bg@2x.png" s=
+tyle=3D"display:block;outline:none;border:none;text-decoration:none"></td><=
+/tr></tbody></table><table width=3D"100%" border=3D"0" cellpadding=3D"0" ce=
+llspacing=3D"0" role=3D"presentation" style=3D"height:10px;background:#FF0D=
+44;background-size:100% 100%;background-repeat:no-repeat"><tbody style=3D"w=
+idth:100%"><tr style=3D"width:100%"><td data-id=3D"__react-email-column"></=
+td></tr></tbody></table><table align=3D"center" width=3D"100%" border=3D"0"=
+ cellpadding=3D"0" cellspacing=3D"0" role=3D"presentation" style=3D"max-wid=
+th:inherit;background-color:#ffffff;border-style:none;border-width:0;paddin=
+g:16px;padding-left:16px;padding-top:32px;padding-right:16px;padding-bottom=
+:32px;border-radius:0"><tbody><tr style=3D"width:100%"><td><table width=3D"=
+100%" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" role=3D"presentation=
+"><tbody style=3D"width:100%"><tr style=3D"width:100%"><td data-id=3D"__rea=
+ct-email-column"><h1 style=3D"font-size:28px;line-height:36px;color:rgba(28=
+, 43, 52, 0.98);font-weight:600;text-align:center;font-style:normal;backgro=
+und:transparent;white-space:normal;margin:0;font-family:-apple-system,Blink=
+MacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif;padding-top:24px;p=
+adding-bottom:32px">[P3] Triggered: [Oficina Mec=C3=A2nica] Pod =C2=B7 Rein=
+=C3=ADcios de cont=C3=AAiner on pod_name:oficina-api-5487bb8cf5-j2w4d</h1><=
+/td></tr></tbody></table><table width=3D"100%" border=3D"0" cellpadding=3D"=
+0" cellspacing=3D"0" role=3D"presentation" style=3D"margin-bottom:16px;heig=
+ht:1px;background:#EEEEEE;background-size:100% 100%;background-repeat:no-re=
+peat"><tbody style=3D"width:100%"><tr style=3D"width:100%"><td data-id=3D"_=
+_react-email-column"></td></tr></tbody></table><table align=3D"center" widt=
+h=3D"100%" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" role=3D"present=
+ation" style=3D"max-width:inherit;background-color:#ffffff;border-style:non=
+e;border-width:0;padding:16px;padding-left:0;padding-top:16px;padding-right=
+:0;padding-bottom:16px;border-radius:0"><tbody><tr style=3D"width:100%"><td=
+><div style=3D"font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto=
+,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.5;overflow-wrap:an=
+ywhere;word-break:break-word"><div class=3D"event_markdown">
+<p>=F0=9F=94=B4 <strong>Cont=C3=AAiner reiniciou</strong> =E2=80=94 pod <co=
+de>oficina-api-5487bb8cf5-j2w4d</code></p>
+<p>Servi=C3=A7o: <code>oficina-mecanica-api</code> =C2=B7 Ambiente: <code>p=
+roduction</code><br>
+Observado: <strong>0.1</strong> rein=C3=ADcios na janela (limite: 0.0) na j=
+anela de 10 min<br>
+Desde: 2026-09-10 06:12:16</p>
+<p><a href=3D"https://app.us5.datadoghq.com/dashboard/wa8-aqr-3pv/oficina-m=
+ecnica--kubernetes">Dashboard</a> =C2=B7 <a href=3D"https://app.us5.datadog=
+hq.com/logs?query=3Dservice%3Aoficina-mecanica-api+env%3Aproduction">Logs</=
+a></p>
+<p><span class=3D"dd-user"><a href=3D"https://us5.datadoghq.com/account/pro=
+file/85df56f7-2a9b-49d5-9103-2934a66274aa">@lucas.almeida-silva@hotmail.com=
+</a></span> <span class=3D"dd-user">@ramooncamacho@hotmail.com</span> <span=
+ class=3D"dd-user"><a href=3D"https://us5.datadoghq.com/account/profile/49d=
+ac4ba-cd25-4cee-8ecd-9fe78304b0a6">@guilhermedarochasalvador@gmail.com</a><=
+/span> <span class=3D"dd-user"><a href=3D"https://us5.datadoghq.com/account=
+/profile/97f3f69a-4044-4542-94bc-66636da457ce">@camacho.renan@gmail.com</a>=
+</span></p>
+</div></div></td></tr></tbody></table><table width=3D"100%" border=3D"0" ce=
+llpadding=3D"0" cellspacing=3D"0" role=3D"presentation" style=3D"margin-top=
+:24px;margin-bottom:16px;height:1px;background:#EEEEEE;background-size:100%=
+ 100%;background-repeat:no-repeat"><tbody style=3D"width:100%"><tr style=3D=
+"width:100%"><td data-id=3D"__react-email-column"></td></tr></tbody></table=
+><table align=3D"center" width=3D"100%" border=3D"0" cellpadding=3D"0" cell=
+spacing=3D"0" role=3D"presentation" style=3D"max-width:inherit;background-c=
+olor:#ffffff;border-style:none;border-width:0;padding:16px;padding-left:0;p=
+adding-top:16px;padding-right:0;padding-bottom:16px;border-radius:0"><tbody=
+><tr style=3D"width:100%"><td><div style=3D"font-family:-apple-system,Blink=
+MacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:15px;lin=
+e-height:1.5;overflow-wrap:anywhere;word-break:break-word"><div class=3D"ev=
+ent_markdown">
+<p><code>max(last_10m):diff(max:kubernetes.containers.restarts{kube_deploym=
+ent:oficina-api} by {pod_name}) &gt; 0</code></p>
+</div></div></td></tr></tbody></table><table align=3D"center" width=3D"100%=
+" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" role=3D"presentation" st=
+yle=3D"max-width:inherit;background-color:#ffffff;border-style:none;border-=
+width:0;padding:16px;padding-left:16px;padding-top:16px;padding-right:16px;=
+padding-bottom:24px;border-radius:0"><tbody><tr style=3D"width:100%"><td><d=
+iv style=3D"text-align:center"><img alt=3D"snapshot" src=3D"https://us5.dat=
+adoghq.com/api/v2/snapshot/view/public/2y/e4fe4548-9b02-11f1-815d-7627e98e4=
+b1c/1789020797329-098c6002-6c04-49d6-9d38-23f58b0578d6.png" style=3D"displa=
+y:block;outline:none;border:none;text-decoration:none" width=3D"100%"></div=
+></td></tr></tbody></table><table width=3D"100%" border=3D"0" cellpadding=
+=3D"0" cellspacing=3D"0" role=3D"presentation" style=3D"margin-top:24px;mar=
+gin-bottom:16px;height:1px;background:#EEEEEE;background-size:100% 100%;bac=
+kground-repeat:no-repeat"><tbody style=3D"width:100%"><tr style=3D"width:10=
+0%"><td data-id=3D"__react-email-column"></td></tr></tbody></table><table a=
+lign=3D"center" width=3D"100%" border=3D"0" cellpadding=3D"0" cellspacing=
+=3D"0" role=3D"presentation" style=3D"max-width:inherit;background-color:#f=
+fffff;border-style:none;border-width:0;padding:16px;padding-left:16px;paddi=
+ng-top:0;padding-right:16px;padding-bottom:16px;border-radius:0"><tbody><tr=
+ style=3D"width:100%"><td><table width=3D"100%" border=3D"0" cellpadding=3D=
+"0" cellspacing=3D"0" role=3D"presentation"><tbody style=3D"width:100%"><tr=
+ style=3D"width:100%"><td data-id=3D"__react-email-column" style=3D"backgro=
+und:transparent;padding-bottom:24px"><a href=3D"https://us5.datadoghq.com/e=
+vent/event?id=3D8803977161653934973&amp;start=3D1789020136000&amp;end=3D178=
+9020736000&amp;utm_source=3Ddogmail&amp;utm_medium=3Dmonitor_alert_notifica=
+tion&amp;utm_campaign=3DMonitorAlertNotification_0.0.1" style=3D"line-heigh=
+t:100%;text-decoration:none;display:inline-block;max-width:100%;mso-padding=
+-alt:0px;padding:16px;color:#ffffff;background-color:#1F69D9;border-style:s=
+olid;border-width:1px;border-color:#1F69D9;border-radius:4px;width:100%;box=
+-sizing:border-box;text-align:center;font-weight:400;font-size:17px;font-fa=
+mily:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-=
+serif;padding-top:16px;padding-right:16px;padding-bottom:16px;padding-left:=
+16px" target=3D"_blank"><span><!--[if mso]><i style=3D"mso-font-width:400%;=
+mso-text-raise:24" hidden>&#8202;&#8202;</i><![endif]--></span><span style=
+=3D"max-width:100%;display:inline-block;line-height:120%;mso-padding-alt:0p=
+x;mso-text-raise:12px">View Event in Datadog</span><span><!--[if mso]><i st=
+yle=3D"mso-font-width:400%" hidden>&#8202;&#8202;&#8203;</i><![endif]--></s=
+pan></a></td></tr></tbody></table><table align=3D"center" width=3D"100%" bo=
+rder=3D"0" cellpadding=3D"0" cellspacing=3D"0" role=3D"presentation" style=
+=3D"max-width:inherit;background-color:#ffffff;border-style:none;border-wid=
+th:0;padding:16px;padding-left:16px;padding-top:0;padding-right:16px;paddin=
+g-bottom:0;border-radius:0"><tbody><tr style=3D"width:100%"><td><table widt=
+h=3D"100%" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" role=3D"present=
+ation"><tbody style=3D"width:100%"><tr style=3D"width:100%"><td data-id=3D"=
+__react-email-column"><p style=3D"font-size:13px;line-height:18px;color:rgb=
+a(28, 43, 52, 0.98);font-weight:400;text-align:center;font-style:normal;whi=
+te-space:normal;margin:0;font-family:-apple-system,BlinkMacSystemFont,Segoe=
+ UI,Roboto,Helvetica,Arial,sans-serif;margin-top:0;margin-bottom:0;margin-l=
+eft:0;margin-right:0"><a href=3D"https://us5.datadoghq.com/monitors/2240503=
+6?group=3Dpod_name%3Aoficina-api-5487bb8cf5-j2w4d&amp;from_ts=3D17890198360=
+00&amp;to_ts=3D1789021036000&amp;event_id=3D8803977161653934973&amp;link_so=
+urce=3Dmonitor_notif&amp;link_monitor_id=3D22405036&amp;link_event_id=3D880=
+3977161653934973&amp;link_event_ts=3D1789020736&amp;utm_source=3Ddogmail&am=
+p;utm_medium=3Dmonitor_alert_notification&amp;utm_campaign=3DMonitorAlertNo=
+tification_0.0.1" style=3D"color:#1F69D9;text-decoration-line:none;font-fam=
+ily:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-s=
+erif;text-decoration:none;font-size:inherit;line-height:inherit" target=3D"=
+_blank"><span style=3D"border-bottom:1px solid #1F69D9">Monitor Status</spa=
+n></a><span style=3D"margin:0 8px;color:#666">=C2=B7</span><a href=3D"https=
+://us5.datadoghq.com/monitors/22405036/edit?link_source=3Dmonitor_notif&amp=
+;link_monitor_id=3D22405036&amp;link_event_id=3D8803977161653934973&amp;lin=
+k_event_ts=3D1789020736&amp;utm_source=3Ddogmail&amp;utm_medium=3Dmonitor_a=
+lert_notification&amp;utm_campaign=3DMonitorAlertNotification_0.0.1" style=
+=3D"color:#1F69D9;text-decoration-line:none;font-family:-apple-system,Blink=
+MacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif;text-decoration:no=
+ne;font-size:inherit;line-height:inherit" target=3D"_blank"><span style=3D"=
+border-bottom:1px solid #1F69D9">Edit Monitor</span></a><span style=3D"marg=
+in:0 8px;color:#666">=C2=B7</span><a href=3D"https://us5.datadoghq.com/logs=
+?query=3D%28%28kube_deployment%3Aoficina-api%29%29+AND+pod_name%3Aoficina-a=
+pi-5487bb8cf5-j2w4d&amp;from_ts=3D1789020136000&amp;to_ts=3D1789020736000&a=
+mp;live=3Dfalse&amp;link_source=3Dmonitor_notif&amp;link_monitor_id=3D22405=
+036&amp;link_event_id=3D8803977161653934973&amp;link_event_ts=3D1789020736&=
+amp;utm_source=3Ddogmail&amp;utm_medium=3Dmonitor_alert_notification&amp;ut=
+m_campaign=3DMonitorAlertNotification_0.0.1" style=3D"color:#1F69D9;text-de=
+coration-line:none;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Ro=
+boto,Helvetica,Arial,sans-serif;text-decoration:none;font-size:inherit;line=
+-height:inherit" target=3D"_blank"><span style=3D"border-bottom:1px solid #=
+1F69D9">Related Logs</span></a></p></td></tr></tbody></table></td></tr></tb=
+ody></table></td></tr></tbody></table></td></tr></tbody></table><table widt=
+h=3D"100%" border=3D"0" cellpadding=3D"0" cellspacing=3D"0" role=3D"present=
+ation"><tbody style=3D"width:100%"><tr style=3D"width:100%"><td data-id=3D"=
+__react-email-column"><table width=3D"100%" border=3D"0" cellpadding=3D"0" =
+cellspacing=3D"0" role=3D"presentation"><tbody style=3D"width:100%"><tr sty=
+le=3D"width:100%"><td data-id=3D"__react-email-column"><p style=3D"font-siz=
+e:12px;line-height:16px;color:rgba(28, 43, 52, 0.5);font-weight:400;text-al=
+ign:center;font-style:normal;background:inherit;white-space:normal;margin:0=
+;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Ari=
+al,sans-serif;padding-bottom:24px;margin-top:0;margin-bottom:0;margin-left:=
+0;margin-right:0">To manage your Datadog subscription,<!-- --> <a href=3D"h=
+ttps://us5.datadoghq.com/account/preferences?utm_source=3Ddogmail&amp;utm_m=
+edium=3Dmonitor_alert_notification&amp;utm_campaign=3DMonitorAlertNotificat=
+ion_0.0.1" style=3D"color:rgba(28, 43, 52, 0.5);text-decoration-line:none;f=
+ont-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial=
+,sans-serif;text-decoration:none;font-size:inherit;line-height:inherit" tar=
+get=3D"_blank"><span style=3D"border-bottom:1px solid rgba(28, 43, 52, 0.5)=
+">click here</span></a><br>
+This alert was raised by account Lucas Almeida Backpack
+<br>=C2=A9<!-- -->2026<!-- --> Datadog Inc, 620 8th Ave, NYC</p></td></tr><=
+/tbody></table></td></tr></tbody></table></td></tr></tbody></table></td></t=
+r></tbody></table><img src=3D"http://outbound.dtdg.co/wf/open?upn=3Du001.C9=
+5h8zyPGECEIpRUr5MFgumKbtNiwperyzlaVvN6bzMIMa-2BVy1lm5HbfOshrBKC2gdl8GNI1Dy2=
+XdUX6g6reBuY07vE2nQiq187t5AKgHmhD1JZy8VKaDY6sGn2RhvRWSzLLAxSHdZ1evfWdxVggaI=
+tv9hREha62zqYlZq06OgKTYoaIAmbo3TAexnYh5gl9h3-2BnPjQszn-2FQAwlCp78we-2FCr9IA=
+Xdtfttvafc765wJGi1hnM6KaoXN8RmUdJMrj0SxC37kJAE-2B06IC2WZZnW5z89vGmwLq8sa-2B=
+lX-2BjzETpjcJ9HcB2uDrvpwrusGwblGnzQVsriQA6EjEI7FCmJ69b8gYAX7EXEpskCXYEHHfyt=
+Sv9mvmlHapZTjRVitpBDocOxXf2HaBCwDhS3TVvYCHRGstNCA0IOR-2Fi-2BJSdtuCTcn5mNUNy=
+0YFGF78rwfkT1cbwCZSjfUCY9Kh73Si8k4siVPrS2nAOfRVUsNS0HVx7MwbpZZe4gQdpBLYQQ0N=
+mUl4bdX6wXBdX4stoAK3QRg1iIxZQRU4D-2F7pcKW01uDTS4FBAOucBlrQyJ4x1atu3SSoWyTAY=
+WC69RkIm-2F8M1Df7gltVnQ9GCDNdEISDy2TFYmlqawPKMtRHjbSQ1rRqXvmaLNa68G1H2zc1Ao=
+5e2m1FShFIkFTFVOyNEY3pMkEN-2Bgnd3QOxkmoLUUemSYjcqdF-2F4Ekz2dwvFkjR2f2D7L-2B=
+gXCBKkfunJWghdOjsNFyfdxIfACA8qPqC4EXWsD6RmV2iGKxrnsLeRuYwVUKGUUpGyIccFb2sUX=
+bL0kq6r8ex-2Fg-3D" alt=3D"" width=3D"1" height=3D"1" border=3D"0" style=3D"=
+height:1px !important;width:1px !important;border-width:0 !important;margin=
+-top:0 !important;margin-bottom:0 !important;margin-right:0 !important;marg=
+in-left:0 !important;padding-top:0 !important;padding-bottom:0 !important;p=
+adding-right:0 !important;padding-left:0 !important;"></body><!-- Thanks fo=
+r using Datadog! =F0=9F=90=B6 --></html><!--/$-->=
+
+--07579430efb32501bcc7896550cc309a2b055f8107c70cdae16231ef2684--
