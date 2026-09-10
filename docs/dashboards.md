@@ -24,7 +24,21 @@ sigla (L1, L13…). Os monitores ligados a cada dashboard estão em [Monitores](
    pessoa clicou por último.
 7. **Nenhum widget vazio sem nota.** Onde a ausência de dado é estrutural, uma nota amarela ao lado explica
    qual limitação a causa.
-8. **Todo widget que soma declara `aggregator = "sum"`.** Um `toplist` ou um `query_value` reduzem a série
+8. **A forma de fórmula é a padrão; `q = "..."` só onde não há legenda.** Na forma curta, o **nome da série
+   na legenda é a própria consulta** — `avg:nodejs.eventloop.utilization{env:production,service:…}` no lugar
+   de `utilização`. A forma de fórmula permite `alias`, e é ela que produz legenda legível.
+
+   Duas regras derivadas, e a segunda é fácil de errar:
+
+   - **Série sem agrupamento → `alias`.** É o rótulo que aparece na legenda.
+   - **Série agrupada por tag → sem `alias`.** Um alias numa consulta com `by {…}` rotula **todas** as séries
+     com o mesmo texto, e a distinção por pod, por rota ou por status desaparece da legenda. Sem alias, o
+     destino nomeia cada série pelo valor do grupo.
+
+   A exceção é `query_table`: ali o `alias` nomeia a **coluna**, e as linhas é que são os grupos — alias em
+   consulta agrupada é o comportamento correto.
+
+9. **Todo widget que soma declara `aggregator = "sum"`.** Um `toplist` ou um `query_value` reduzem a série
    temporal a um número, e **o padrão dessa redução é a média**. Num widget que promete "requisições na
    janela" ou "ordens que saíram de cada status", a média por intervalo é a leitura errada — e ela aparece
    como número quebrado (`1,5 ordens`), que é o sintoma que denuncia o problema. A forma curta `q = "..."`
