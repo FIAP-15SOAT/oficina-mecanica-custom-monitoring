@@ -55,7 +55,7 @@ tags à mão.
 
 **`env:production` na tag do recurso é o ambiente da solução**, e não necessariamente o valor que o componente
 emite: o monitor da Lambda carrega `env:production` como recurso, mas **consulta** `functionname` e nunca `env`, porque a
-Lambda emite `env:prod-simulated` (L8).
+consulta por `env` amarraria o monitor a um valor que a função já emitiu diferente no passado (L8).
 
 Filtrar a conta por `project:oficina-mecanica` lista todos os monitores e testes sintéticos da solução — é o
 que o widget `manage_status` da Visão Geral usa. Dashboards ficam de fora por causa da restrição acima; para
