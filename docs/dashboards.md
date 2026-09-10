@@ -174,27 +174,46 @@ mais direto que o p95. Percentis ficam habilitados apenas onde o monitor de lat�
 
 | Grupo | Widget | Consulta |
 | --- | --- | --- |
-| Volume | Criadas por dia | `sum:oficina.work_order.created{$env,$service}.as_count().rollup(sum, 86400)` |
-| Volume | Criadas por hora | idem, `rollup(sum, 3600)` |
+| Volume | Ordens de serviço criadas | `sum:oficina.work_order.created{$env,$service}.as_count()`, em barras, **sem `rollup` fixo** |
 | Permanência | Média por status (s) | `avg:oficina.work_order.status.duration{$env,$service} by {oficina.work_order.status}` |
 | Permanência | Máxima por status (s) | `max:oficina.work_order.status.duration{$env,$service} by {oficina.work_order.status}` |
 | Ciclo completo | Lead time — média e máximo (s) | `avg:` e `max:oficina.work_order.lead_time.duration{$env,$service}` |
 | Ciclo completo | Diagnóstico até conclusão — média e máximo (s) | `avg:` e `max:oficina.work_order.diagnosis_to_completion.duration{$env,$service}` |
-| Transições | Entradas em cada status na janela | log: `service:$service env:$env @oficina.event.name:work_order.status.updated`, contagem por `@oficina.work_order.status.current` |
-| Transições | Decisões de orçamento | log: `@oficina.event.name:(quote.approved OR quote.rejected)`, contagem por `@oficina.event.name` |
+| Funil | Ordens que saíram de cada status | `count:oficina.work_order.status.duration{$env,$service} by {oficina.work_order.status}.as_count()` |
+| Funil | Decisões de orçamento | log: `@oficina.event.name:(quote.approved OR quote.rejected)`, contagem por `@oficina.event.name` |
 
-### Por que dois widgets de log num dashboard de métricas
+### O funil vem da métrica, e a razão mudou
 
-Foi questionado, e a resposta é específica: `oficina.work_order.status.duration` responde *quanto tempo* as
-ordens ficam em cada status, e `oficina.work_order.created` responde *quantas nascem*. **Nenhuma métrica
-responde quantas ordens entraram em cada status no período** — que é o formato de funil. O único sinal que o
-carrega é o evento de log `work_order.status.updated`, com o atributo `@oficina.work_order.status.current`. O
-mesmo vale para a razão entre orçamentos aprovados e recusados.
+O desenho original supunha que **nenhuma métrica** responderia "quantas ordens passaram por cada status", e
+por isso o funil nasceu como widget de log sobre `work_order.status.updated`. **A verificação em produção
+mostrou que a suposição estava errada, nas duas pontas:**
+
+- `oficina.work_order.status.duration` é emitida **quando a ordem sai de um status**. Logo,
+  `count:` dela por status responde exatamente quantas ordens avançaram de cada etapa — o funil, com os seis
+  status.
+- O evento `work_order.status.updated` **não** cobre o fluxo: ele só é emitido em **duas das transições**,
+  `RECEIVED → IN_DIAGNOSIS` e `COMPLETED → DELIVERED`. As demais são efeito de ações de domínio — submissão e
+  aprovação de orçamento, conclusão de serviço — e emitem os seus próprios eventos. Um widget sobre ele
+  mostrava dois status e dava a impressão de que os outros quatro não tinham acontecido.
+
+O funil passou para a métrica. **O que ela não cobre**: `DELIVERED` e `CANCELLED` não aparecem, porque status
+terminal não emite permanência — não se sai dele. Uma nota amarela no grupo diz isso.
+
+O widget de **decisões de orçamento** continua sendo de log: `quote.approved` e `quote.rejected` não têm
+métrica equivalente.
+
+### Por que o widget de volume não fixa `rollup`
+
+Um `rollup(sum, 86400)` cria um balde diário que só fecha à meia-noite. Em qualquer janela que não termine ali
+— e o seletor de tempo do dashboard permite qualquer uma — o último balde aparece parcial, e o destino o
+rotula **`interval in progress`**. Quem olha vê um número que não é o do dia. Sem `rollup` fixo, o destino
+escolhe o intervalo pela janela, a largura da barra acompanha a seleção e não existe balde aberto.
 
 ### As duas grafias na mesma página
 
-Widgets de métrica exibem `in_diagnosis`; widgets de log exibem `IN_DIAGNOSIS`. É L12, é inerente às duas
-fontes, e não é corrigível aqui. A nota de abertura do dashboard declara isso.
+Widgets de métrica exibem `in_diagnosis`; widgets de log exibem o enum de domínio. É L12, é inerente às duas
+fontes, e não é corrigível aqui. Com o funil migrado para a métrica, resta um único widget de log nesta
+página — o de decisões de orçamento, que agrupa por nome de evento e não por status.
 
 ### `quote.rejected` nunca foi observado
 
