@@ -253,17 +253,17 @@ resource "datadog_dashboard" "api" {
             }
           }
 
-          # Os dois limiares de M3, desenhados. Quem olha o grafico ve onde o
+          # Os dois limiares do monitor de latencia, desenhados. Quem olha o grafico ve onde o
           # alerta vai disparar sem abrir a definicao do monitor.
           marker {
             display_type = "warning dashed"
-            label        = "warning M3 (${var.api_latency_p95_warning_seconds}s)"
+            label        = "warning latência p95 (${var.api_latency_p95_warning_seconds}s)"
             value        = "y = ${var.api_latency_p95_warning_seconds}"
           }
 
           marker {
             display_type = "error dashed"
-            label        = "critical M3 (${var.api_latency_p95_critical_seconds}s)"
+            label        = "critical latência p95 (${var.api_latency_p95_critical_seconds}s)"
             value        = "y = ${var.api_latency_p95_critical_seconds}"
           }
         }

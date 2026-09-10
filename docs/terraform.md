@@ -16,7 +16,7 @@ Catorze recursos, todos na conta Datadog `us5`. **Nenhum recurso AWS é criado a
 | `datadog_monitor` | 8 | `monitors_*.tf` |
 | `datadog_synthetics_test` | 1 | `synthetics.tf` |
 
-O teste sintético cria implicitamente o seu próprio monitor no destino, exposto em `monitor_id` — é o M1.
+O teste sintético cria implicitamente o seu próprio monitor no destino, exposto em `monitor_id`. É por isso que a conta mostra nove monitores para oito recursos `datadog_monitor`.
 
 A árvore de arquivos e a convenção de nomes estão em [Convenções](conventions.md).
 

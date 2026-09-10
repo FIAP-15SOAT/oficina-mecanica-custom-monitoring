@@ -6,7 +6,7 @@ Aceito — 2026-09-09
 
 ## Contexto
 
-O dashboard de API precisa de p50, p90, p95 e p99 de latência, e M3 alerta sobre o p95. Há dois caminhos
+O dashboard de API precisa de p50, p90, p95 e p99 de latência, e o monitor de latência alerta sobre o p95. Há dois caminhos
 possíveis na conta, e eles não são equivalentes.
 
 **Caminho 1 — *trace metrics* do APM.** O agente gera automaticamente `trace.<operação>.duration` a partir dos
@@ -63,7 +63,7 @@ muda com a versão do agente**. É essa estabilidade que se está comprando com 
 - O filtro de erro passa a ser `http.response.status_code:5*` em vez de `error.type`. Os dois são
   equivalentes: `error.type` só é preenchido para 5xx e erro de transporte.
 - **A alavanca de redução é uma linha.** Remover `http.response.status_code` derruba a estimativa para ~160 e
-  move "erro por rota" para os logs — ao custo de M2 e M4 virarem monitores de log.
+  move "erro por rota" para os logs — ao custo de os monitores de erros 5xx e de falhas no fluxo de ordens de serviço virarem monitores de log.
 - **As métricas de negócio não recebem a habilitação.** Elas também são histogramas OTLP, mas nenhum monitor
   depende de percentil sobre elas, e para responder "alguma ordem ficou presa neste status?" o **máximo** é
   mais direto que o p95. `avg`, `max`, `min`, `sum` e `count` são gratuitos e bastam.
@@ -81,8 +81,8 @@ e legível, com percentis **gratuitos**. Nesse dia esta decisão deve ser reaber
 *trace metrics* eliminaria ~960 custom metrics, que é praticamente todo o custo deste repositório.
 
 **A migração não é automática nem barata.** Ela reescreve o grupo de Latência e a tabela de rotas do dashboard
-de API, a consulta de M3, e torna `terraform/metrics.tf` desnecessário. Também troca a fonte do dado: *trace
-metrics* são amostradas e a métrica OTLP não é, então os números não são idênticos e os limiares de M3
+de API, a consulta do monitor de latência, e torna `terraform/metrics.tf` desnecessário. Também troca a fonte do dado: *trace
+metrics* são amostradas e a métrica OTLP não é, então os números não são idênticos e os limiares do monitor de latência
 precisariam ser recalibrados sobre a nova fonte.
 
 Por isso o gatilho fica registrado aqui, como decisão a tomar, e não como pendência a executar. O que **não**

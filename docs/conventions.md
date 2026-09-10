@@ -39,8 +39,8 @@ Recursos ligados a um componente carregam também `service:<serviço>`:
 
 | Recurso | Tag de serviço |
 | --- | --- |
-| Teste sintético, M1 a M6, M8, M9 | `service:oficina-mecanica-api` |
-| M7 | `service:oficina-mecanica-lambda-customer-auth` |
+| Teste sintético e todos os monitores da API, do fluxo de negócio, dos pods e das integrações | `service:oficina-mecanica-api` |
+| Erros de execução da Lambda | `service:oficina-mecanica-lambda-customer-auth` |
 
 **Dashboards são a exceção, e ela é imposta pelo destino.** A API de dashboards aceita **apenas** as chaves
 `team` e `ai`; qualquer outra devolve `400 Invalid tag format. Valid tag keys are: team, ai.` Os quatro
@@ -54,7 +54,7 @@ Em `terraform/locals.tf`: `local.common_tags`, `local.api_tags`, `local.lambda_t
 tags à mão.
 
 **`env:production` na tag do recurso é o ambiente da solução**, e não necessariamente o valor que o componente
-emite: M7 carrega `env:production` como recurso, mas **consulta** `functionname` e nunca `env`, porque a
+emite: o monitor da Lambda carrega `env:production` como recurso, mas **consulta** `functionname` e nunca `env`, porque a
 Lambda emite `env:prod-simulated` (L8).
 
 Filtrar a conta por `project:oficina-mecanica` lista todos os monitores e testes sintéticos da solução — é o
@@ -108,16 +108,16 @@ terraform/
 ├── locals.tf                   escopos, tags, links, rodapé e a mensagem
 ├── outputs.tf                  endereços dos dashboards e identificadores
 ├── metrics.tf                  datadog_metric_tag_configuration
-├── synthetics.tf               M1
+├── synthetics.tf               verificação externa
 ├── dashboard_overview.tf       ┐
 ├── dashboard_api.tf            │ um arquivo por dashboard
 ├── dashboard_work_orders.tf    │
 ├── dashboard_kubernetes.tf     ┘
-├── monitors_api.tf             M2, M3
-├── monitors_work_orders.tf     M4
-├── monitors_kubernetes.tf      M5, M6
-├── monitors_lambda.tf          M7
-└── monitors_integrations.tf    M8, M9
+├── monitors_api.tf             erros 5xx, latência p95
+├── monitors_work_orders.tf     falhas no fluxo de negócio
+├── monitors_kubernetes.tf      memória e reinícios de pod
+├── monitors_lambda.tf          erros de execução da Lambda
+└── monitors_integrations.tf    envio de e-mail, dependência
 ```
 
 | Elemento | Padrão | Exemplo |

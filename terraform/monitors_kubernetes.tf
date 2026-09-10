@@ -1,10 +1,10 @@
-# M5 -- memoria do pod proxima do limite.
+# Memoria do pod proxima do limite.
 #
 # `working_set` sobre `limits`, e nao `usage`, porque `working_set` e o que o
 # encerramento por falta de memoria observa. Nao ha monitor de CPU: com
 # autoescalonamento mirando 70% de CPU, "CPU alta" e o mecanismo funcionando.
 # O sinal acionavel seria estrangulamento sustentado, que fica no dashboard e
-# so vira monitor se M3 provar correlacao.
+# so vira monitor se o monitor de latencia provar correlacao.
 resource "datadog_monitor" "pod_memory" {
   name = "[Oficina Mecânica] Pod · Memória próxima do limite"
   type = "query alert"

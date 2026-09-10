@@ -118,16 +118,16 @@ Passo a passo completo, incluindo como consultar a conta sem passar pelo Terrafo
 │   ├── locals.tf                   escopos, tags, links e a mensagem única
 │   ├── outputs.tf                  endereços dos dashboards e identificadores
 │   ├── metrics.tf                  configuração de tags e percentis
-│   ├── synthetics.tf               M1 — verificação externa
+│   ├── synthetics.tf               verificação externa da rota pública
 │   ├── dashboard_overview.tf       "a solução está de pé agora?"
 │   ├── dashboard_api.tf            "onde está lenta e por quê?"
 │   ├── dashboard_work_orders.tf    "o fluxo está andando?"
 │   ├── dashboard_kubernetes.tf     "os pods têm folga?"
-│   ├── monitors_api.tf             M2, M3
-│   ├── monitors_work_orders.tf     M4
-│   ├── monitors_kubernetes.tf      M5, M6
-│   ├── monitors_lambda.tf          M7
-│   └── monitors_integrations.tf    M8, M9
+│   ├── monitors_api.tf             erros 5xx, latência p95
+│   ├── monitors_work_orders.tf     falhas no fluxo de negócio
+│   ├── monitors_kubernetes.tf      memória e reinícios de pod
+│   ├── monitors_lambda.tf          erros de execução da Lambda
+│   └── monitors_integrations.tf    envio de e-mail, dependência
 ├── docs/                           documentação e ADRs
 └── .github/workflows/              ci.yml e cd.yml
 ```
@@ -138,7 +138,7 @@ Passo a passo completo, incluindo como consultar a conta sem passar pelo Terrafo
 | --- | --- |
 | 🔭 [Observabilidade](docs/observability.md) | **Documento âncora**: inventário dos sinais disponíveis com tags e semântica, as quinze limitações com evidência, as divergências e sua fonte de verdade, e a conta de custo de custom metrics |
 | 📊 [Dashboards](docs/dashboards.md) | Um dashboard por seção com pergunta, público, janela, widgets e consultas — mais as sete regras visuais e os dashboards recusados |
-| 🚨 [Monitores](docs/monitors.md) | Um monitor por seção com consulta, limiares, janela, agrupamento, prioridade e mensagem; os alertas recusados; a redundância assumida entre M2 e M4; a calibração de limiar |
+| 🚨 [Monitores](docs/monitors.md) | Um monitor por seção com consulta, limiares, janela, agrupamento, prioridade e mensagem; os alertas recusados; a redundância assumida entre os dois monitores de erro; a calibração de limiar |
 | 📐 [Convenções](docs/conventions.md) | Nomenclatura de dashboards, monitores, arquivos e recursos, e a estratégia de tagging reaproveitando as dimensões existentes |
 | ☁️ [Infraestrutura](docs/terraform.md) | Providers, autenticação, state e trava, state remoto consumido, variáveis, locals, ausência de módulos, importação e prevenção de desvio |
 | 🔁 [CI/CD](docs/ci-cd.md) | Os dois workflows job a job, o que reprova, o ruleset, o **inventário de configuração externa**, os passos manuais e as exposições aceitas |
@@ -158,7 +158,7 @@ entrega contínua e arquitetura de observabilidade.
 | Repositório | Papel | Relação com este repositório |
 | --- | --- | --- |
 | `oficina-mecanica-app` | API principal (NestJS) e manifestos do cluster | **Origem** de métricas, traces e logs da API. Dono do agente Datadog e da instrumentação. Alterar o que é coletado é mudança lá, não aqui |
-| `oficina-mecanica-lambda-customer-auth` | Autenticação de clientes | Origem das métricas *enhanced* e dos logs da função. M7 observa a função por `functionname` |
+| `oficina-mecanica-lambda-customer-auth` | Autenticação de clientes | Origem das métricas *enhanced* e dos logs da função. O monitor de erros de execução a observa por `functionname` |
 | `oficina-mecanica-gateway` | API Gateway | **Publica `api_endpoint`**, que o teste sintético verifica. Este repositório lê o output do state dele |
 | `oficina-mecanica-k8s` | Cluster EKS | Executa a API e o agente. Origem das métricas de contêiner, pod e nó |
 | `oficina-mecanica-infra-base` | Rede | Dono do bucket que guarda o state de toda a solução |

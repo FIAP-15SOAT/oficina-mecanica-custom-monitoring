@@ -167,8 +167,8 @@ Cada uma é citada por sigla nos demais documentos e nos comentários do Terrafo
 | **L11** | **Logs do Job de migração** parcialmente sob `ecr-oficina-mecanica-app-repo` | 144 linhas em `oficina-mecanica-db-migrate` e 619 no repositório de imagem | Consultas de log escopam por serviço **por inclusão**, nunca por exclusão | — |
 | **L12** | **Valor de tag de métrica é normalizado para minúsculas; atributo de log não** | `http.request.method` responde `get`/`post`; `@oficina.work_order.status.current` responde `IN_DIAGNOSIS` | O dashboard de Ordens de Serviço exibe as duas grafias, e isso é inerente às duas fontes | — |
 | **L13** | **CPU de uso em nanocores, requests e limits em cores** | `usage.total` ~15,2 e6 contra `requests` 0,2 | Comparação exige divisão por `1e9` | — |
-| **L14** | **Métricas de falha da Lambda não existem até a primeira falha** | `.errors`, `.timeouts`, `.out_of_memory` sem série em 30 dias | M7 avalia em **`No Data`**, não em `OK`, na operação normal. Não notifica, por `notify_no_data = false` | — |
-| **L15** | **Três eventos de log nunca observados**: `quote.rejected`, `mail.send.failed`, `health.degraded` | Zero ocorrências em 30 dias de índice | M8, M9 e o widget de decisões de orçamento são construídos sobre eventos não observados. **Não podem ser verificados sem provocar o evento na origem** | Exercitar o caminho de exceção |
+| **L14** | **Métricas de falha da Lambda não existem até a primeira falha** | `.errors`, `.timeouts`, `.out_of_memory` sem série em 30 dias | O monitor de erros da Lambda avalia em **`No Data`**, não em `OK`, na operação normal. Não notifica, por `notify_no_data = false` | — |
+| **L15** | **Três eventos de log nunca observados**: `quote.rejected`, `mail.send.failed`, `health.degraded` | Zero ocorrências em 30 dias de índice | Os monitores de falha de e-mail e de dependência degradada, e o widget de decisões de orçamento são construídos sobre eventos não observados. **Não podem ser verificados sem provocar o evento na origem** | Exercitar o caminho de exceção |
 
 `api_apm_summary.jpeg` confirma que a conta **não tinha** monitores, testes sintéticos nem objetivos de nível
 de serviço antes desta entrega: não houve nada a importar.
@@ -203,7 +203,7 @@ custo de cada uma sem responder nada que o máximo já não responda.
 **A alavanca de redução é uma linha.** Remover `http.response.status_code` da lista de
 `http.server.request.duration` derruba a estimativa de ~960 para **~160** — total de ~250 — e move "erro por
 rota" para os logs, onde `@http.route` e `@http.response.status_code` já são facetas confirmadas. O custo é
-perder a série de 5xx por rota no dashboard e a base de M2 e M4, que passariam a monitores de log.
+perder a série de 5xx por rota no dashboard e a base dos monitores de erros 5xx e de falhas no fluxo de ordens de serviço, que passariam a monitores de log.
 
 Descartado do índice, deliberadamente, e por isso indisponível para consulta de métrica:
 `url.scheme`, `network.protocol.version`, `http.request.method`, `version` e `error.type`.
