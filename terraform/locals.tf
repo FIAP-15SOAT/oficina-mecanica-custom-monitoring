@@ -25,7 +25,17 @@ locals {
   # 400 "Invalid tag format". A restricao e do destino e vale so para
   # dashboards: monitor e teste sintetico aceitam tag arbitraria.
   dashboard_tags = ["team:${var.project_name}"]
-  lambda_tags    = concat(local.common_tags, ["service:oficina-mecanica-lambda-customer-auth"])
+
+  # `datadog_dashboard.url` devolve CAMINHO (`/dashboard/<id>/<slug>`), nao
+  # endereco absoluto. Num resumo de execucao do GitHub ou num e-mail de alerta
+  # esse caminho resolve contra o dominio errado, e o link chega quebrado.
+  datadog_app_base = trimsuffix(var.datadog_app_url, "/")
+
+  dashboard_url_overview    = "${local.datadog_app_base}${datadog_dashboard.overview.url}"
+  dashboard_url_api         = "${local.datadog_app_base}${datadog_dashboard.api.url}"
+  dashboard_url_work_orders = "${local.datadog_app_base}${datadog_dashboard.work_orders.url}"
+  dashboard_url_kubernetes  = "${local.datadog_app_base}${datadog_dashboard.kubernetes.url}"
+  lambda_tags               = concat(local.common_tags, ["service:oficina-mecanica-lambda-customer-auth"])
 
 
   logs_url_api_errors  = "${var.datadog_app_url}logs?query=${urlencode("${local.log_scope} status:error")}"
@@ -59,7 +69,7 @@ locals {
     Verificação: `GET ${local.api_endpoint}/api/health/ready` — esperado `200` em menos de ${var.synthetic_response_time_ms} ms
     Desde: {{first_triggered_at}}
 
-    [Dashboard](${datadog_dashboard.api.url}) · [Logs](${local.logs_url_api_errors})
+    [Dashboard](${local.dashboard_url_api}) · [Logs](${local.logs_url_api_errors})
 
     {{#is_recovery}}✅ Recuperado após {{triggered_duration_sec}}s.{{/is_recovery}}
 

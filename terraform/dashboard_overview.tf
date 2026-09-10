@@ -6,7 +6,7 @@ resource "datadog_dashboard" "overview" {
 
   widget {
     note_definition {
-      content          = "**A solução está de pé agora?** Janela padrão de 4 horas.\n\nDetalhe: [API — onde está lenta e por quê](${datadog_dashboard.api.url}) · [Ordens de Serviço — o fluxo está andando?](${datadog_dashboard.work_orders.url}) · [Kubernetes — os pods têm folga?](${datadog_dashboard.kubernetes.url})\n\nO laboratório é ligado sob demanda e destruído ao fim de cada sessão. Com o ambiente fora, todo número desta página é zero ou vazio, e **isso é o estado esperado, não incidente** — nenhum monitor notifica por ausência de dado."
+      content          = "**A solução está de pé agora?** Janela padrão de 4 horas.\n\nDetalhe: [API — onde está lenta e por quê](${local.dashboard_url_api}) · [Ordens de Serviço — o fluxo está andando?](${local.dashboard_url_work_orders}) · [Kubernetes — os pods têm folga?](${local.dashboard_url_kubernetes})\n\nO laboratório é ligado sob demanda e destruído ao fim de cada sessão. Com o ambiente fora, todo número desta página é zero ou vazio, e **isso é o estado esperado, não incidente** — nenhum monitor notifica por ausência de dado."
       background_color = "blue"
       font_size        = "14"
       text_align       = "left"

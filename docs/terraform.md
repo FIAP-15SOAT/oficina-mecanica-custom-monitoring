@@ -149,8 +149,12 @@ inequívoca. **O valor não é versionado**: este repositório é público e end
 | --- | --- |
 | `api_scope`, `api_scope_and`, `k8s_scope`, `lambda_scope`, `log_scope`, `work_order_routes` | escopo de consulta compartilhado por ~60 consultas |
 | `common_tags`, `api_tags`, `lambda_tags` | tagging uniforme |
-| `logs_url_*` | links contextuais nas mensagens de alerta |
+| `datadog_app_base`, `dashboard_url_*`, `logs_url_*` | links contextuais nas mensagens de alerta e no resumo da entrega |
 | `alert_footer`, `monitor_message`, `synthetic_message` | a mensagem única, por estado |
+
+**`datadog_dashboard.url` devolve caminho, não endereço absoluto** (`/dashboard/<id>/<slug>`). Concatenado com
+`local.datadog_app_base`, vira link que funciona fora do Datadog — no resumo da execução do CD e no corpo do
+e-mail de alerta. Sem isso, o caminho resolve contra o domínio de quem renderiza o markdown.
 
 `monitor_message` é um template renderizado por `templatestring` em cada monitor. Os `$${…}` no heredoc são
 escapados para chegarem **literais** ao template e só então serem substituídos — as chaves duplas `{{…}}` são
