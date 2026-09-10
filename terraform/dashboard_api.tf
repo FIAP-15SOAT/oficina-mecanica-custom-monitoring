@@ -91,13 +91,32 @@ resource "datadog_dashboard" "api" {
         }
       }
 
+      # `top()` ordena e corta; quem reduz a serie ao numero exibido e o
+      # agregador do widget, cujo padrao e MEDIA. Num widget que promete
+      # "requisicoes na janela", media por intervalo e a leitura errada.
       widget {
         toplist_definition {
           title     = "Top 10 rotas por volume (requisições na janela)"
           live_span = "1h"
 
           request {
-            q = "top(count:http.server.request.duration{$env,$service} by {http.route}.as_count(), 10, 'sum', 'desc')"
+            formula {
+              formula_expression = "volume"
+
+              limit {
+                count = 10
+                order = "desc"
+              }
+            }
+
+            query {
+              metric_query {
+                data_source = "metrics"
+                name        = "volume"
+                aggregator  = "sum"
+                query       = "count:http.server.request.duration{$env,$service} by {http.route}.as_count()"
+              }
+            }
           }
         }
       }
