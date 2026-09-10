@@ -19,8 +19,13 @@ locals {
     "env:${var.env}",
   ]
 
-  api_tags    = concat(local.common_tags, ["service:${var.api_service}"])
-  lambda_tags = concat(local.common_tags, ["service:oficina-mecanica-lambda-customer-auth"])
+  api_tags = concat(local.common_tags, ["service:${var.api_service}"])
+
+  # Dashboard so aceita as chaves `team` e `ai` -- qualquer outra volta
+  # 400 "Invalid tag format". A restricao e do destino e vale so para
+  # dashboards: monitor e teste sintetico aceitam tag arbitraria.
+  dashboard_tags = ["team:${var.project_name}"]
+  lambda_tags    = concat(local.common_tags, ["service:oficina-mecanica-lambda-customer-auth"])
 
 
   logs_url_api_errors  = "${var.datadog_app_url}logs?query=${urlencode("${local.log_scope} status:error")}"
