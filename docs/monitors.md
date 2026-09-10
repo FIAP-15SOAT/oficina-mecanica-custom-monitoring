@@ -235,6 +235,15 @@ reiniciando devolve `0.5`, pod saudável devolve `0`.
 **`new_group_delay` de 600 s** é maior que o dos demais porque todo provisionamento cria pods novos, e um pod
 recém-criado tem contador partindo do zero. Sem a folga, cada subida do laboratório geraria alerta.
 
+**O `{{value}}` deste alerta não é uma contagem de reinícios.** `diff()` devolve o incremento entre pontos
+consecutivos do contador, já suavizado pelo rollup do destino — no teste real, um pod que reiniciou oito vezes
+produziu `0.1`. Quem lê o e-mail precisa da informação na **linha do sintoma** (`Contêiner reiniciou — pod
+<nome>`), não no número; por isso a unidade diz *de aumento no contador de reinícios*, e não *reinícios*.
+
+Pendência conhecida: `change(max(last_10m),last_10m)` devolveria a contagem real — 3, na medição feita durante
+o teste — mas `change()` foi justamente a família que **não disparou**, e trocar de volta sem reproduzir o
+`CrashLoopBackOff` seria adivinhar. Fica registrado para quando houver oportunidade de reexercitar o cenário.
+
 ---
 
 ## Lambda customer-auth · Erros de execução

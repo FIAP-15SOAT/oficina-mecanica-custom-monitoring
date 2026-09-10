@@ -64,7 +64,7 @@ resource "datadog_monitor" "pod_restarts" {
     group_suffix    = " — pod `{{pod_name.name}}`"
     service         = var.api_service
     environment     = var.env
-    unit            = "reinícios na janela"
+    unit            = "de aumento no contador de reinícios"
     window          = "10 min"
     dashboard_url   = local.dashboard_url_kubernetes
     logs_url        = local.logs_url_pods
