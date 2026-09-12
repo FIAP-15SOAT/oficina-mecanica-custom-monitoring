@@ -60,6 +60,10 @@ fonte não amostrada e as dimensões já indexadas, ao custo de custom metrics.
   deliberadamente: habilitá-las multiplicaria o custo sem que nenhum monitor dependa delas. Esses widgets usam
   média e máximo, com nota explicando a escolha.
 
+## Reavaliação da fonte
+
+Uma eventual troca da métrica OTLP exige decisão explícita: revisar widgets e consultas, comparar cobertura e dimensões entre as fontes e recalibrar os limiares com dados da fonte escolhida. O upgrade do Agent não migra esses consumidores automaticamente; a decisão vigente continua sendo usar a métrica OTLP.
+
 ## Referências
 
 - [Amostragem de ingestão com OpenTelemetry](https://docs.datadoghq.com/opentelemetry/ingestion_sampling/)

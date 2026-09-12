@@ -1,6 +1,6 @@
 # CI/CD
 
-Dois workflows, no mesmo padrão estrutural dos outros cinco repositórios da solução.
+Dois workflows, no mesmo padrão estrutural dos cinco outros repositórios Terraform da solução.
 
 | Workflow | Gatilho | Arquivo |
 | --- | --- | --- |
@@ -10,6 +10,8 @@ Dois workflows, no mesmo padrão estrutural dos outros cinco repositórios da so
 ---
 
 ## CI
+
+![Workflow de CI: jobs, steps e dependências needs](diagrams/ci-workflow.png)
 
 ```yaml
 concurrency:
@@ -21,17 +23,19 @@ Cancela execução anterior da mesma branch: só o último push interessa.
 
 ### Job `Terraform Validation`
 
-| Passo | O que faz | Reprova quando |
-| --- | --- | --- |
-| `Terraform Fmt Check` | `terraform fmt -check -recursive` | Algum arquivo não está formatado |
-| `Terraform Init Monitoring` | `terraform init -backend=false` | Provider indisponível ou versão fora da faixa |
-| `Terraform Validate Monitoring` | `terraform validate` | Erro de sintaxe, referência ou tipo |
-| `Validate the telemetry application key` | verifica que `DD_APP_KEY` não está vazio | **A chave não está configurada** |
-| `Configure AWS Credentials` | assume a sessão do laboratório, com `continue-on-error` | **Nunca** — a falha é registrada e o fluxo segue |
-| `Terraform Plan Monitoring` | `init -reconfigure` e `plan`, condicionado ao sucesso das credenciais | O `plan` falha |
-| `Note skipped plan in job summary` | escreve a nota de prévia pulada | — |
+| # | Step no workflow | O que faz | Reprova quando |
+| --- | --- | --- | --- |
+| 1 | actions/checkout | Obtém a revisão que disparou o workflow; os comandos seguintes usam esse checkout. | Não consegue obter o código do repositório. |
+| 2 | Setup Terraform | Instala/configura a CLI Terraform para os comandos seguintes. | A instalação/configuração da CLI falha. |
+| 3 | Terraform Fmt Check | Executa `terraform fmt -check -recursive`. | Algum arquivo diverge da formatação canônica. |
+| 4 | Terraform Init Monitoring | Executa `terraform init -backend=false -no-color`: instala os providers sem conectar ao backend. | A instalação dos providers falha, por indisponibilidade de registry/cache ou incompatibilidade de versão. |
+| 5 | Terraform Validate Monitoring | Executa `terraform validate -no-color` com os schemas instalados. | Há inconsistência de sintaxe, tipo ou referência. |
+| 6 | Validate the telemetry application key | Verifica `DD_APP_KEY` antes da autenticação AWS. | A chave está ausente; é erro de configuração, mesmo quando a prévia AWS pode ser pulada. |
+| 7 | Configure AWS Credentials | Configura access key, secret key e session token da mesma sessão AWS, em us-east-1; conserva `aws_creds.outcome` para decidir entre plan e nota de skip. | **Não reprova**: este step usa `continue-on-error: true`. |
+| 8 | Terraform Plan Monitoring | Só com `aws_creds.outcome == success`: executa init com backend (`-reconfigure`) e plan. | Qualquer comando de init/plan executado falha; essa falha não é tratada como skip. |
+| 9 | Note skipped plan in job summary | Só com `aws_creds.outcome == failure`: registra no resumo que a prévia foi pulada. | — (nota informativa). |
 
-**A diferença deliberada em relação aos outros quatro repositórios de infraestrutura**: aqui o `plan` depende
+**A diferença deliberada em relação aos demais stacks Terraform**: aqui o `plan` depende
 de **duas** credenciais, e elas não são equivalentes.
 
 - A **da AWS** é instável por natureza — o laboratório é ligado sob demanda e a sessão expira. A falha dela
@@ -57,6 +61,12 @@ rejeita consulta malformada, tag inexistente e widget inválido.
 Depende de `Terraform Validation`. Gera um token de GitHub App e abre um Pull Request para a `main` se ainda
 não houver um aberto para a branch. Idêntico ao dos demais repositórios.
 
+| # | Step no workflow | O que faz | Reprova quando |
+| --- | --- | --- | --- |
+| 1 | actions/checkout | Obtém a revisão que disparou o workflow; os comandos seguintes usam esse checkout. | Não consegue obter o código do repositório. |
+| 2 | Generate GitHub App Token | Gera `app_token` com `BOT_APP_ID` e `BOT_PRIVATE_KEY`; o próximo step recebe o token como `GH_TOKEN`. | O App não consegue gerar o token, por configuração/credenciais inválidas ou falta de acesso ao repositório. |
+| 3 | Open a PR to main if none exists | Consulta `gh pr list` para head → main e cria o PR só se não houver um aberto. | A consulta ou criação do PR pelo CLI falha; um PR já existente termina com sucesso. |
+
 **Não é check obrigatório do ruleset**, deliberadamente: ele não avalia qualidade nenhuma, apenas automatiza
 a abertura.
 
@@ -64,31 +74,34 @@ a abertura.
 
 ## CD
 
+![Workflow de CD: job e steps de provisionamento](diagrams/cd-workflow.png)
+
 ```yaml
 concurrency:
   group: production
   cancel-in-progress: false
 ```
 
-O **mesmo grupo dos demais repositórios da solução**. Isso serializa a entrega deste repositório contra a da
-API e a da infraestrutura, o que é correto: aplicar monitores enquanto o alvo observado muda produziria plano
-sobre um alvo em movimento. `cancel-in-progress: false` porque cancelar um `apply` no meio deixa estado
-parcial.
+O grupo `production` serializa runs **deste repositório**; usar o mesmo nome na API e na infraestrutura não cria um lock entre repositórios. `cancel-in-progress: false` preserva o run em andamento, porque cancelar um `apply` no meio pode deixar estado parcial. Sem configuração adicional de fila, um novo run pode substituir o pendente anterior. Ver [concorrência no GitHub Actions](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency).
 
 ### Job `Terraform Datadog Monitoring`
 
-Condicionado a estar na `main` **e** a `ENABLE_DEPLOY == 'true'` ou acionamento manual.
+Condicionado a estar na `main` **e** a (`ENABLE_DEPLOY == 'true'` **ou** acionamento manual). Selecionar outra branch no disparo manual pula o job.
 `environment: production`, que restringe a entrega à `main` pela política de branch do environment.
 
-| Passo | O que faz | Reprova quando |
-| --- | --- | --- |
-| `Validate required secrets and variables` | verifica `DD_API_KEY`, `DD_APP_KEY` e `ALERT_EMAILS` | Qualquer um está vazio |
-| `Configure AWS Credentials` | assume a sessão do laboratório, **sem** `continue-on-error` | As credenciais estão expiradas |
-| `Terraform Init` / `Validate` / `Plan` | contra o backend real | Qualquer erro |
-| `Terraform Apply` | `apply -auto-approve` | Qualquer erro |
-| `Publish dashboard addresses in the job summary` | escreve os quatro endereços e o estado do teste sintético | — |
+| # | Step no workflow | O que faz | Reprova quando |
+| --- | --- | --- | --- |
+| 1 | actions/checkout | Obtém a revisão que disparou o workflow; os comandos seguintes usam esse checkout. | Não consegue obter o código do repositório. |
+| 2 | Validate required secrets and variables | Verifica `DD_API_KEY`, `DD_APP_KEY` e `ALERT_EMAILS` antes de instalar/autenticar. | Qualquer item está vazio; a mensagem identifica o que falta. |
+| 3 | Setup Terraform | Instala/configura a CLI Terraform para os comandos seguintes. | A instalação/configuração da CLI falha. |
+| 4 | Configure AWS Credentials | Configura access key, secret key e session token da mesma sessão AWS, em us-east-1. | As credenciais estão ausentes/inválidas ou a configuração da sessão falha; não há `continue-on-error` no CD. |
+| 5 | Terraform Init | Executa `terraform init -no-color`, instalando providers e configurando o backend S3 real. | A instalação dos providers ou o acesso/configuração do backend falha. |
+| 6 | Terraform Validate | Executa `terraform validate -no-color`. | Há inconsistência de configuração. |
+| 7 | Terraform Plan | Executa `terraform plan -no-color`; consulta providers e states necessários e mostra as alterações. | Qualquer erro de plan, incluindo acesso aos states e APIs necessários. |
+| 8 | Terraform Apply | Executa `terraform apply -auto-approve -no-color`; calcula seu próprio plano, pois não há plano salvo no step anterior. | Qualquer erro ao planejar/aplicar os recursos. |
+| 9 | Publish dashboard addresses in the job summary | Obtém os outputs e publica os endereços dos quatro dashboards e o estado do teste sintético no resumo do run. | A escrita do resumo no `$GITHUB_STEP_SUMMARY` falha. |
 
-**A validação explícita de segredos vem antes de tudo.** Falhar ali, com o nome do que falta, custa segundos.
+**A validação explícita de segredos vem logo após o checkout, antes de instalar ferramentas ou chamar a nuvem.** Falhar ali, com o nome do que falta, custa segundos.
 Falhar no meio do `apply` deixa a conta em estado parcial. `ALERT_EMAILS` entra na validação porque, sem
 destinatários, os nove monitores seriam criados corretamente e **não notificariam ninguém** — a pior falha
 possível para este repositório, porque é silenciosa.
@@ -130,7 +143,7 @@ Tudo o que precisa existir fora do código. Reconfigurar o repositório do zero 
 | 4 | `ENABLE_DEPLOY` | Variable | Repositório | **Sim** | interruptor do CD | CD | ✅ `true` |
 | 5 | `ENVIRONMENT_ONLINE` | Variable | Repositório | **Sim** | alterna o teste sintético entre `live` e `paused` | CI, CD | ✅ `false` |
 | 6 | `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_SESSION_TOKEN` | Secrets | Organização | **Sim** no CD, opcional no CI | backend S3 e leitura do state do gateway | CI (prévia), CD | ✅ configurados na organização |
-| 7 | `BOT_APP_ID` / `BOT_PRIVATE_KEY` | Variable / Secret | Organização | Não | abertura automática de Pull Request | CI | ✅ configurados na organização |
+| 7 | `BOT_APP_ID` / `BOT_PRIVATE_KEY` | Variable / Secret | Organização | **Sim para abertura automática de PR** | `open-pr` gera o token sem condição; não são inputs da validação/aplicação Terraform | CI | ✅ configurados na organização |
 | 8 | Environment `production` | — | Repositório | **Sim** | restringe a entrega à `main` | CD | ✅ criado, política de branch restrita à `main` |
 | 9 | Ruleset da `main` | — | Repositório | **Sim** | recusa push direto, exige Pull Request | — | ✅ ativo, zero atores com burla, `Terraform Validation` obrigatório |
 
@@ -149,7 +162,7 @@ listáveis com um token de colaborador; a confirmação deles é a primeira exec
    | Escopo | Para quê |
    | --- | --- |
    | `dashboards_read`, `dashboards_write` | os quatro dashboards |
-   | `monitors_read`, `monitors_write` | os oito monitores |
+   | `monitors_read`, `monitors_write` | os nove monitores |
    | `synthetics_read`, `synthetics_write` | o teste sintético |
    | `metrics_read` | leitura de metadado de métrica |
    | `metric_tags_write` | **a configuração de tags de métrica**. Não existe escopo chamado `metrics_write`; o que `POST /api/v2/metrics/{metric}/tags` exige é este. `metrics_metadata_write` é outra coisa — unidade e descrição da métrica — e não serve |
@@ -166,9 +179,10 @@ listáveis com um token de colaborador; a confirmação deles é a primeira exec
 3. Confirme:
    ```bash
    curl -H "DD-API-KEY: $DD_API_KEY" -H "DD-APPLICATION-KEY: $DD_APP_KEY" \
-     https://api.us5.datadoghq.com/api/v1/validate
-   # {"valid":true}
+     https://api.us5.datadoghq.com/api/v2/validate_keys
+   # {"status":"ok"} confirma que o par de chaves é válido
    ```
+   Esse endpoint valida o par de chaves. `/api/v1/validate` verifica apenas a API key; consulte a [referência de validação de API e application keys](https://docs.datadoghq.com/api/latest/key-management/validate-api-and-application-keys/).
 4. Grave como secret **de repositório** `DD_APP_KEY`.
 
 ### Passos manuais, sem automação
@@ -188,8 +202,7 @@ Os passos 4 e 5 fazem parte do ritual do [Runbook](runbook.md).
 environment não é entregue a workflow de branch de trabalho. A exposição é aceita com a mesma justificativa já
 documentada no repositório da Lambda, e com uma mitigação concreta: a chave é de uma **service account
 dedicada com escopos mínimos**, nunca uma chave pessoal de administrador. O pior caso é alguém com acesso de
-escrita ao repositório conseguir ler e escrever dashboards, monitores e testes sintéticos — não os dados da
-conta, não a cobrança, não os usuários.
+escrita ao repositório conseguir ler e escrever dashboards, monitores e testes sintéticos, além de consultar métricas e logs pelos escopos `timeseries_query` e `logs_read_data`. A lista não concede administração de cobrança ou usuários.
 
 A alternativa endurecida — chave somente-leitura no repositório para o `plan`, chave de escrita no environment
 para o `apply` — fica registrada e **não é adotada agora**: dobra o número de credenciais a renovar num time de

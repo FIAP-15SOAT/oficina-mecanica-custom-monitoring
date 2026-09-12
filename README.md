@@ -109,6 +109,7 @@ Passo a passo completo, incluindo como consultar a conta sem passar pelo Terrafo
 ```
 .
 ├── terraform/
+│   ├── .terraform.lock.hcl           versões e checksums dos providers
 │   ├── backend.tf                  state remoto no S3 compartilhado
 │   ├── providers.tf                providers
 │   ├── data.tf                     o state remoto do gateway
@@ -125,9 +126,13 @@ Passo a passo completo, incluindo como consultar a conta sem passar pelo Terrafo
 │   ├── monitors_work_orders.tf     falhas no fluxo de negócio
 │   ├── monitors_kubernetes.tf      memória e reinícios de pod
 │   ├── monitors_lambda.tf          erros de execução da Lambda
-│   └── monitors_integrations.tf    envio de e-mail, dependência
+│   ├── monitors_integrations.tf    envio de e-mail, dependência
+│   ├── terraform.tfvars               configuração versionada do laboratório
+│   └── terraform.tfvars.example       referência para configuração local
 ├── docs/                           documentação e ADRs
-└── .github/workflows/              ci.yml e cd.yml
+├── .github/workflows/              ci.yml e cd.yml
+├── .gitignore
+└── README.md
 ```
 
 ## 📚 Documentação
