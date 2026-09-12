@@ -50,10 +50,10 @@ coleta atual não produz aparece como limitação com causa, não como widget va
 
 **Uma propriedade que o define**
 
-**Nenhuma consulta usa um nome que não tenha sido confirmado na conta.** Cada métrica,
-tag e faceta citada foi verificada por uma consulta que devolveu dados — não por leitura
-do código de origem. As divergências encontradas estão registradas, e a lista de
-limitações tem a evidência de cada uma.
+**Nenhuma consulta usa um nome sem fundamento verificável.** Métricas, tags e facetas seguem
+o contrato vigente dos sinais; condições de falha permanecem identificadas mesmo quando não
+possuem ocorrência recente. Uma consulta vazia, isoladamente, não comprova sucesso nem erro
+de configuração.
 
 ## 🧰 Stack
 
@@ -139,7 +139,7 @@ Passo a passo completo, incluindo como consultar a conta sem passar pelo Terrafo
 
 | Documento | Conteúdo |
 | --- | --- |
-| 🔭 [Observabilidade](docs/observability.md) | **Documento âncora**: inventário dos sinais disponíveis com tags e semântica, as quinze limitações com evidência, as divergências e sua fonte de verdade, e a conta de custo de custom metrics |
+| 🔭 [Observabilidade](docs/observability.md) | **Documento âncora**: inventário dos sinais disponíveis com tags e semântica, as limitações atuais com evidência, as divergências e sua fonte de verdade, e a conta de custo de custom metrics |
 | 📊 [Dashboards](docs/dashboards.md) | Um dashboard por seção com pergunta, público, janela, widgets e consultas — mais as sete regras visuais e os dashboards recusados |
 | 🚨 [Monitores](docs/monitors.md) | Um monitor por seção com consulta, limiares, janela, agrupamento, prioridade e mensagem; os alertas recusados; a redundância assumida entre os dois monitores de erro; a calibração de limiar |
 | 📐 [Convenções](docs/conventions.md) | Nomenclatura de dashboards, monitores, arquivos e recursos, e a estratégia de tagging reaproveitando as dimensões existentes |

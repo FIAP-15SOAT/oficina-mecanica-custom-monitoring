@@ -87,7 +87,8 @@ O grupo `production` serializa runs **deste repositório**; usar o mesmo nome na
 ### Job `Terraform Datadog Monitoring`
 
 Condicionado a estar na `main` **e** a (`ENABLE_DEPLOY == 'true'` **ou** acionamento manual). Selecionar outra branch no disparo manual pula o job.
-`environment: production`, que restringe a entrega à `main` pela política de branch do environment.
+`environment: production` delimita o contexto da entrega e seus secrets/variables. O environment atual não
+possui reviewers nem política própria de branch; a restrição à `main` é feita pela condição do job.
 
 | # | Step no workflow | O que faz | Reprova quando |
 | --- | --- | --- | --- |
@@ -135,20 +136,21 @@ descrito acima.
 
 Tudo o que precisa existir fora do código. Reconfigurar o repositório do zero é percorrer esta tabela.
 
-| # | Nome | Tipo | Escopo | Obrigatório | Finalidade | Usado em | Estado |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | `DD_API_KEY` | Secret | Organização | **Sim** | `provider.api_key` | CI (plan), CD (plan, apply) | ✅ configurado |
-| 2 | `DD_APP_KEY` | Secret | **Repositório** | **Sim** | `provider.app_key` | CI (plan), CD (plan, apply) | ✅ configurado |
-| 3 | `ALERT_EMAILS` | Variable | Repositório | **Sim** | destinatários dos nove monitores, separados por vírgula | CI, CD | ✅ configurado, 4 endereços |
-| 4 | `ENABLE_DEPLOY` | Variable | Repositório | **Sim** | interruptor do CD | CD | ✅ `true` |
-| 5 | `ENVIRONMENT_ONLINE` | Variable | Repositório | **Sim** | alterna o teste sintético entre `live` e `paused` | CI, CD | ✅ `false` |
-| 6 | `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_SESSION_TOKEN` | Secrets | Organização | **Sim** no CD, opcional no CI | backend S3 e leitura do state do gateway | CI (prévia), CD | ✅ configurados na organização |
-| 7 | `BOT_APP_ID` / `BOT_PRIVATE_KEY` | Variable / Secret | Organização | **Sim para abertura automática de PR** | `open-pr` gera o token sem condição; não são inputs da validação/aplicação Terraform | CI | ✅ configurados na organização |
-| 8 | Environment `production` | — | Repositório | **Sim** | restringe a entrega à `main` | CD | ✅ criado, política de branch restrita à `main` |
-| 9 | Ruleset da `main` | — | Repositório | **Sim** | recusa push direto, exige Pull Request | — | ✅ ativo, zero atores com burla, `Terraform Validation` obrigatório |
+| # | Nome | Tipo | Escopo | Obrigatório | Finalidade | Usado em |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | `DD_API_KEY` | Secret | Organização | **Sim** | `provider.api_key` | CI (plan), CD (plan, apply) |
+| 2 | `DD_APP_KEY` | Secret | **Repositório** | **Sim** | `provider.app_key` | CI (plan), CD (plan, apply) |
+| 3 | `ALERT_EMAILS` | Variable | Repositório | **Sim** | destinatários dos nove monitores, separados por vírgula | CI, CD |
+| 4 | `ENABLE_DEPLOY` | Variable | Repositório | **Sim** | interruptor do CD | CD |
+| 5 | `ENVIRONMENT_ONLINE` | Variable | Repositório | **Sim** | alterna o teste sintético entre `live` e `paused` | CI, CD |
+| 6 | `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_SESSION_TOKEN` | Secrets | Organização | **Sim** no CD, opcional no CI | backend S3 e leitura do state do gateway | CI (prévia), CD |
+| 7 | `BOT_APP_ID` / `BOT_PRIVATE_KEY` | Variable / Secret | Organização | **Sim para abertura automática de PR** | `open-pr` gera o token sem condição; não são inputs da validação/aplicação Terraform | CI |
+| 8 | Environment `production` | — | Repositório | **Sim** | contexto de secrets/variables e histórico da entrega | CD |
+| 9 | Ruleset da `main` | — | Repositório | **Sim** | recusa push direto, exige Pull Request | — |
 
-Conferido contra o estado real do repositório em **2026-09-09**. Os itens de escopo de organização não são
-listáveis com um token de colaborador; a confirmação deles é a primeira execução verde do CI e do CD.
+A tabela define a configuração externa exigida; não é um snapshot de valores ou presença em uma data.
+Itens de organização podem não ser listáveis por um token de colaborador, e uma execução verde comprova
+somente que os valores necessários estavam disponíveis para aquele run.
 
 `DD_SITE` **não é necessário**: vira valor padrão versionado de `var.datadog_api_url`.
 
@@ -188,7 +190,8 @@ listáveis com um token de colaborador; a confirmação deles é a primeira exec
 ### Passos manuais, sem automação
 
 1. Criar a service account e a chave de aplicação (acima).
-2. Criar as três variables e o environment `production` com política de branch restrita à `main`.
+2. Criar as três variables e o environment `production`. Uma política do environment restrita à `main`
+   é hardening opcional; o gate vigente está na condição do job.
 3. Criar o ruleset da `main`.
 4. **Renovar as três credenciais AWS a cada sessão do laboratório** — elas expiram, e é o passo esquecido com
    mais frequência.

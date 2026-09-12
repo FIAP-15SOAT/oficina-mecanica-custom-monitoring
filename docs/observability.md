@@ -65,6 +65,13 @@ Semântica herdada do ADR 0005 da API, e que muda a leitura dos números:
 consulta o usa: ele foi descartado do índice pela configuração de tags da seção 5, e
 `http.response.status_code:5*` é equivalente e mais barato.
 
+As *trace metrics* vigentes usam as operações `http.server.request` para HTTP e `postgresql.query` para
+PostgreSQL; as séries anteriores baseadas nos escopos de instrumentação não fazem parte do contrato atual.
+A métrica de latência atual do APM é a *distribution* `trace.<SPAN_NAME>`; a forma
+`trace.<SPAN_NAME>.duration` é legada e não oferece percentis. Dashboards e monitores continuam usando
+`http.server.request.duration`, conforme os critérios do
+[ADR 0002](adr/0002-latencia-por-metrica-otlp.md).
+
 ### 2.3 Tags de recurso
 
 Conforme o mapeamento oficial OTel → Datadog, aplicável a métricas:
