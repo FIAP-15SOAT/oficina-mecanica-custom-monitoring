@@ -1,4 +1,4 @@
-# ADR 0003: Uptime por verificação externa, e a dívida do ADR 0005 da API
+# ADR 0003: Uptime por verificação externa
 
 ## Status
 
@@ -6,16 +6,10 @@ Aceito — 2026-09-09
 
 ## Contexto
 
-O ADR 0005 do repositório `oficina-mecanica-app` — *Telemetria da API* — decidiu **excluir as rotas de saúde da
-instrumentação de entrada**, via `ignoreIncomingRequestHook` em `incoming-request-filter.ts`. A razão é boa:
-uma probe do Kubernetes a cada poucos segundos, multiplicada por réplicas, domina o volume de traces e de
-métricas sem informar nada sobre o comportamento da aplicação.
-
-A consequência foi registrada no próprio ADR, com todas as letras: **uptime "só se fecha com monitor sintético
-externo, entrega da camada de coleta"**.
-
-A camada de coleta não entregou. A conta ficou sem um único teste sintético, e portanto sem nenhuma resposta
-para a pergunta mais simples de todas: *a rota pública está de pé agora?*
+O ADR 0005 do repositório `oficina-mecanica-api` exclui as rotas de saúde da instrumentação de entrada por
+`ignoreIncomingRequestHook`. Uma probe do Kubernetes a cada poucos segundos, multiplicada por réplicas,
+dominaria o volume de traces e métricas sem representar tráfego de usuário. A disponibilidade pública é,
+portanto, medida pelo teste sintético externo declarado neste repositório.
 
 O estado dos sinais confirma que **não existe caminho interno** para essa resposta:
 
@@ -43,8 +37,8 @@ GET {api_endpoint}/api/health/ready
 Três localidades (`aws:us-east-1`, `aws:sa-east-1`, `aws:eu-west-1`), execução a cada 5 minutos, confirmação
 com `min_location_failed = 2` e `min_failure_duration = 120`.
 
-**Este ADR quita explicitamente a dívida declarada no ADR 0005 da API.** A decisão de excluir as probes da
-instrumentação continua correta; o que faltava era a contraparte, e ela passa a existir aqui.
+A exclusão das probes da instrumentação e o teste sintético externo são complementares: uma reduz ruído e o
+outro mede o caminho público completo.
 
 O endereço vem de `data.terraform_remote_state.gateway.outputs.api_endpoint`, e não de uma variável editada à
 mão — ver [ADR 0004](0004-state-no-s3-compartilhado.md).
@@ -82,17 +76,11 @@ Suspenso, ele não executa, não consome cota e não notifica — **e a definiç
 
 ## Consequências
 
-- Uptime passa a ser observável, **de fora**, atravessando gateway, VPC link, NLB, ingress e pod — que é a
+- Uptime é observável **de fora**, atravessando gateway, VPC Link, NLB e pod — a mesma
   cadeia que o usuário atravessa.
 - **Alternar `ENVIRONMENT_ONLINE` vira passo obrigatório** dos rituais de subida e de derrubada, e o esquecimento
   tem consequência barulhenta. O passo está no [Runbook](../runbook.md), ao lado da renovação das credenciais.
-- A entrega deste repositório passa a fazer parte do ritual de subida, **depois** da entrega do gateway.
+- O apply deste repositório depende do endpoint exportado pelo gateway.
 - A página do próprio teste no destino entrega mais que qualquer dashboard que se fizesse sobre ele —
   histórico por localidade, tempos por fase da requisição, corpo da resposta. Por isso um dashboard dedicado de
   disponibilidade foi recusado.
-
-## Gatilho de reavaliação
-
-O ambiente passar a ser permanente. Nesse caso: reintroduzir o monitor de "coleta interrompida", declarar um
-objetivo de nível de serviço com janela real, e remover a alternância — que existe apenas por causa da
-efemeridade.

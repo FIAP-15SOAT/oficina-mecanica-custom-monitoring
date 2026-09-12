@@ -53,9 +53,9 @@ agrupados é a convenção de nome (`Oficina Mecânica · <Área>`) e a tag `tea
 Em `terraform/locals.tf`: `local.common_tags`, `local.api_tags`, `local.lambda_tags`. Nenhum recurso declara
 tags à mão.
 
-**`env:production` na tag do recurso é o ambiente da solução**, e não necessariamente o valor que o componente
-emite: o monitor da Lambda carrega `env:production` como recurso, mas **consulta** `functionname` e nunca `env`, porque a
-consulta por `env` amarraria o monitor a um valor que a função já emitiu diferente no passado (L8).
+**`env:production` na tag do recurso é o ambiente da solução.** O monitor da Lambda consulta
+`functionname:lbd-oficina-mecanica-customer-auth`, que é o identificador estável e suficiente para a única função
+monitorada.
 
 Filtrar a conta por `project:oficina-mecanica` lista todos os monitores e testes sintéticos da solução — é o
 que o widget `manage_status` da Visão Geral usa. Dashboards ficam de fora por causa da restrição acima; para
@@ -87,8 +87,8 @@ correta é localizada na instrumentação antes do merge. O inventário completo
 
 - **Nunca curinga irrestrito.** Toda consulta de métrica escopa por `env` e `service`, ou pela dimensão
   equivalente do componente (`kube_deployment`, `functionname`, `kube_cluster_name`).
-- **Toda consulta de log escopa por `service`, por inclusão.** Nunca por exclusão: o índice recebe o cluster
-  inteiro e listar o que não se quer é uma lista que envelhece (L7, L11).
+- **Toda consulta de log escopa por `service`, por inclusão.** Nunca por exclusão: o índice recebe sinais de
+  vários componentes do cluster e listar o que não se quer é uma lista que envelhece (L7).
 - **Vírgula é `AND`.** Onde a consulta precisar de `OR`, a expressão inteira troca vírgulas por `AND`
   explícito — o destino recusa a mistura.
 

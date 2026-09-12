@@ -20,15 +20,13 @@ Este repositório é o dono de tudo o que **consome** a telemetria da Oficina Me
 Projeto acadêmico da pós-graduação em Arquitetura de Software da FIAP (turma 15SOAT),
 parte do ecossistema da **Oficina Mecânica**.
 
-A API e a Lambda da solução exportam logs, traces e métricas para o Datadog desde que a
-coleta foi ligada: o serviço `oficina-mecanica-api` tem APM populado, a correlação
-log ↔ trace funciona, e as quatro métricas de negócio respondem a consultas. E a conta
-**não tinha um único dashboard, monitor, objetivo de nível de serviço ou teste
-sintético**. O sinal chegava e parava ali.
-
-O ADR 0005 da API declarou, com todas as letras, que uptime *"só se fecha com monitor
-sintético externo, entrega da camada de coleta"* — e a camada de coleta não entregou.
-Este repositório existe para fechar essa lacuna e **assumir essa dívida**.
+A API exporta métricas e traces por OTLP e logs estruturados pelo stdout dos contêineres;
+a Lambda exporta métricas enhanced e logs pela extensão Datadog. Este repositório
+consome esses sinais e declara quatro dashboards, nove monitores no total, o teste
+sintético da rota pública e a configuração de tags da métrica de latência. Os logs
+instrumentados da API incluem `trace_id` e `span_id` quando emitidos com um span
+ativo; `request.id` identifica a requisição. Logs de bootstrap fora de spans e
+logs dos componentes de plataforma não têm esse mesmo contrato de correlação.
 
 ## 🎯 Responsabilidade
 
@@ -146,7 +144,7 @@ Passo a passo completo, incluindo como consultar a conta sem passar pelo Terrafo
 | 💻 [Como executar localmente](docs/local-setup.md) | Rodar `plan` local, consultar a conta por `curl`, e como não aplicar sem querer |
 | 📐 [ADR 0001](docs/adr/0001-terraform-com-provider-datadog.md) | Terraform com o provider Datadog, em HCL tipado |
 | 📐 [ADR 0002](docs/adr/0002-latencia-por-metrica-otlp.md) | Latência vem da métrica OTLP, não das *trace metrics* |
-| 📐 [ADR 0003](docs/adr/0003-uptime-por-verificacao-externa.md) | Uptime por verificação externa, e a dívida do ADR 0005 da API |
+| 📐 [ADR 0003](docs/adr/0003-uptime-por-verificacao-externa.md) | Uptime por verificação externa |
 | 📐 [ADR 0004](docs/adr/0004-state-no-s3-compartilhado.md) | State no S3 compartilhado, com o acoplamento declarado |
 | 📐 [ADR 0005](docs/adr/0005-conjunto-minimo-de-alertas.md) | Conjunto mínimo de alertas para um ambiente efêmero |
 
@@ -157,12 +155,12 @@ entrega contínua e arquitetura de observabilidade.
 
 | Repositório | Papel | Relação com este repositório |
 | --- | --- | --- |
-| `oficina-mecanica-app` | API principal (NestJS) e manifestos do cluster | **Origem** de métricas, traces e logs da API. Dono do agente Datadog e da instrumentação. Alterar o que é coletado é mudança lá, não aqui |
+| `oficina-mecanica-api` | API principal (NestJS) e manifestos do cluster | **Origem** de métricas, traces e logs da API. Dono do agente Datadog e da instrumentação. Alterar o que é coletado é mudança lá, não aqui |
 | `oficina-mecanica-lambda-customer-auth` | Autenticação de clientes | Origem das métricas *enhanced* e dos logs da função. O monitor de erros de execução a observa por `functionname` |
-| `oficina-mecanica-gateway` | API Gateway | **Publica `api_endpoint`**, que o teste sintético verifica. Este repositório lê o output do state dele |
-| `oficina-mecanica-k8s` | Cluster EKS | Executa a API e o agente. Origem das métricas de contêiner, pod e nó |
+| `oficina-mecanica-api-gateway` | API Gateway | **Publica `api_endpoint`**, que o teste sintético verifica. Este repositório lê o output do state dele |
+| `oficina-mecanica-infra-k8s` | Cluster EKS | Executa a API e o agente. Origem das métricas de contêiner, pod e nó |
 | `oficina-mecanica-infra-base` | Rede | Dono do bucket que guarda o state de toda a solução |
-| `oficina-mecanica-database` | Banco | Observado indiretamente, pelas métricas de cliente da API |
+| `oficina-mecanica-infra-database` | Banco | Observado indiretamente, pelas métricas de cliente da API |
 | **`oficina-mecanica-custom-monitoring`** | **Este repositório** | Consome a telemetria de todos os anteriores. Não produz sinal; produz leitura |
 
 **A entrega deste repositório faz parte do ritual de subida do ambiente, depois da entrega
@@ -173,14 +171,14 @@ do gateway** — o endereço público muda a cada reprovisionamento. O ritual co
 
 - Catorze recursos declarados: 1 configuração de tag de métrica, 4 dashboards, 8
   monitores e 1 teste sintético — que cria o nono monitor no destino.
-- Toda consulta foi verificada contra a conta antes de virar código, e cada consulta de
-  alerta passou por `POST /api/v1/monitor/validate`.
-- A esteira valida `fmt`, `init`, `validate` e a chave de aplicação; a prévia contra a API
-  do destino é a validação específica de Datadog, e ela rejeita consulta malformada, tag
-  inexistente e widget inválido.
-- Quinze limitações da coleta atual estão documentadas com evidência, e três eventos de
-  log usados por monitores **nunca foram observados** — o que está registrado como tal, e
-  não como "funcionando".
+- Consultas de dashboards e alertas ficam declaradas no Terraform, junto dos filtros,
+  agrupamentos e limiares.
+- A esteira executa `fmt`, `init` e `validate` e exige a presença da chave de aplicação.
+  Com credenciais AWS disponíveis, executa também o `plan` contra os providers; isso não
+  substitui a verificação de ingestão ou de ocorrências dos eventos monitorados.
+- As limitações e os contratos da coleta estão descritos em
+  [Observabilidade](docs/observability.md). Eventos condicionais podem não ter ocorrências
+  no intervalo selecionado; uma consulta vazia não valida o caminho de falha.
 
 ## 👥 Autores
 

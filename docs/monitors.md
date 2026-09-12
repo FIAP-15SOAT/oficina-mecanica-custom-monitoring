@@ -83,8 +83,8 @@ repositório é público e endereço é dado pessoal.
 | Confirmação | `var.synthetic_min_location_failed` e `var.synthetic_min_failure_duration_seconds` — por padrão 2 localidades e 120 s |
 
 **Por que existe.** A rota de saúde é excluída da instrumentação na entrada (L3): não há métrica, trace nem log
-de sucesso para ela. Verificação externa é a única forma de responder "a rota pública está de pé?", e é a
-dívida que o ADR 0005 da API declarou e não quitou — ver [ADR 0003](adr/0003-uptime-por-verificacao-externa.md).
+de sucesso para ela. A verificação externa responde se a rota pública está disponível pelo caminho completo;
+ver [ADR 0003](adr/0003-uptime-por-verificacao-externa.md).
 
 **A localidade é de onde o Datadog executa a verificação, não onde a API roda.** Toda a solução vive em
 `us-east-1`, e é justamente por isso que há mais de uma: com uma só, qualquer problema de rede *daquela*
@@ -249,11 +249,9 @@ sum(last_10m):sum:aws.lambda.enhanced.errors{functionname:lbd-oficina-mecanica-c
 | --- | --- | --- | --- | --- |
 | — | > 0 | 10 min | nenhum | **`false`** |
 
-**Escopado por `functionname` e não por `env`.** Até a unificação de `DD_ENV`, a função emitia
-`env:prod-simulated` enquanto a API emitia `env:production` (L8). O `functionname` funciona antes e depois
-dessa correção — foi o que permitiu que o monitor não dependesse dela. **A unificação já foi integrada** e a
-função emite `env:production`, mas o escopo continua por `functionname`: é o identificador estável da função,
-e não há segunda função a distinguir.
+**Escopado por `functionname` e não por `env`.**
+`functionname:lbd-oficina-mecanica-customer-auth` é o identificador estável e suficiente para a única função
+monitorada; a função emite `env:production`.
 
 **Alerta em qualquer erro** porque a função devolve 401 como resposta normal de credencial inválida: erro de
 plataforma é sempre defeito. Monitores separados para expiração de prazo (`timeouts`) e falta de memória
@@ -286,9 +284,8 @@ tempo esgotado é problema de rede, endereço inválido é problema de dado.
 **Monitor de log porque não existe métrica equivalente**, e a cardinalidade — operação × categoria — não
 justificaria criar uma.
 
-⚠️ **`mail.send.failed` tem zero ocorrências em 30 dias de índice** (L15). O monitor é válido — contagem vazia
-é zero, que é o estado saudável — mas **não pode ser dado por verificado de ponta a ponta sem provocar o evento
-na origem**.
+`mail.send.failed` só é emitido quando ocorre uma falha de envio (L15). Sem esse evento no intervalo,
+não há contagem de falhas para comparar ao limiar; ausência de ocorrência não comprova entrega de e-mail.
 
 ---
 
@@ -309,11 +306,11 @@ O evento é emitido pela própria verificação de saúde interna quando uma dep
 É o único sinal que nomeia **qual** dependência falhou — a rota de saúde é excluída da instrumentação na
 entrada (L3), então não há métrica nem trace dela.
 
-⚠️ Mesmo aviso do monitor de e-mail: **`health.degraded` nunca foi observado** (L15).
+`health.degraded` só é emitido quando a verificação detecta degradação (L15). Um intervalo sem esse evento
+não contém amostras de falha da dependência.
 
-Toda consulta de log escopa por `service` **por inclusão**: o índice recebe o cluster inteiro, ~35 % dele é
-ruído de plataforma e `klog` escreve em stderr, então qualquer consulta de erro sem escopo traria `kube-proxy`
-e `metrics-server` como se fossem defeito da aplicação (L7).
+Toda consulta de log escopa por `service` **por inclusão**: o índice também recebe componentes de plataforma,
+como `metrics-server`, cujos logs não devem ser interpretados como defeitos da aplicação (L7).
 
 ---
 
