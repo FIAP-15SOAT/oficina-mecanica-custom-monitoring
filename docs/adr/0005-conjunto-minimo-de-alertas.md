@@ -90,12 +90,9 @@ segunda nomeia o impacto que a primeira não nomeia.
 **Os limiares de latência são valores de percepção de usuário, não percentis observados**, e estão declarados como
 tais. O único dado medido — p95 de 23,5 ms no compose local, ADR 0005 da API — não representa produção.
 
-Isso é uma dívida conhecida, não um descuido. Ela é paga pelo procedimento de calibração do
-[Runbook](../runbook.md): após uma semana com tráfego representativo, reler p95 e p99 reais e ajustar para 2×
-e 4×, **em Pull Request cuja descrição cite os valores medidos**.
-
-Todos os limiares são variáveis em `terraform/variables.tf`, com valores em `terraform/terraform.tfvars`,
-justamente para que a calibração seja uma linha revisável e não uma edição de consulta.
+Os limiares atuais são variáveis em `terraform/variables.tf`, com valores em
+`terraform/terraform.tfvars`. O [Runbook](../runbook.md) descreve como comparar esses valores com p95 e p99
+observados sem editar as consultas.
 
 ## Consequências
 

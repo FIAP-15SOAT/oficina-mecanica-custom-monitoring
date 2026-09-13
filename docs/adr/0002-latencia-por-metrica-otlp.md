@@ -9,46 +9,35 @@ Aceito — 2026-09-09
 O dashboard de API precisa de p50, p90, p95 e p99 de latência, e o monitor de latência alerta sobre o p95. Há dois caminhos
 possíveis na conta, e eles não são equivalentes.
 
-**Caminho 1 — *trace metrics* do APM.** O agente gera automaticamente `trace.<operação>.duration` a partir dos
-spans, **com percentis já disponíveis e sem custo de custom metric**. É o caminho que a documentação do
-fornecedor recomenda, e seria o mais barato.
+**Caminho 1 — *trace metrics* do APM.** O Agent gera a distribution `trace.<SPAN_NAME>` a partir dos spans,
+com percentis disponíveis e sem custo de custom metric. Com o Agent 7.83.1 e o mapeamento v2, a operação HTTP
+observada é `http.server.request` e a distribution correspondente é `trace.http.server.request`.
 
 **Caminho 2 — a métrica OTLP `http.server.request.duration`**, emitida por
 `@opentelemetry/instrumentation-http` em segundos, com as dimensões `http.route` e
 `http.response.status_code`. Por ser um histograma OTLP, ela chega ao destino como uma *distribution*, e
 percentis exigem habilitar agregações por métrica — o que **custa custom metrics**.
 
-O caminho 1 parece melhor até você olhar o nome da operação registrada na conta. Ele é, literalmente:
-
-```
-opentelemetry_instrumentation_http.server
-```
-
-Não é um apelido nem uma abreviação da interface: é o nome do escopo de instrumentação, promovido a nome de
-operação. O agente do cluster roda a versão **7.60**, e a lógica de nomeação de operação **v2** — que produziria
-`http.server.request` — só entra a partir da **7.66**.
-
-A métrica correspondente se chamaria `trace.opentelemetry_instrumentation_http.server.duration`, e ela é duas
-coisas ao mesmo tempo:
-
-- **ilegível** — ninguém lê esse nome num título de widget e entende o que está vendo;
-- **instável** — atualizar o agente para ≥ 7.66 a **renomearia**, quebrando em silêncio todo dashboard e todo
-  monitor construído sobre ela. O alerta não erraria: ele simplesmente pararia de avaliar.
+Os dois caminhos existem na conta, mas têm pipelines e dimensões distintos. A trace distribution é calculada
+pelo Agent a partir dos spans recebidos. Amostragem no SDK OpenTelemetry, anterior ao Agent, pode reduzir
+sua cobertura; isso não significa que toda trace metric seja calculada apenas sobre traces retidos no APM.
+A métrica OTLP é exportada diretamente pela instrumentação, independentemente da amostragem de traces, e
+mantém as dimensões `http.route` e `http.response.status_code` usadas pelos dashboards e monitores atuais.
 
 ## Decisão
 
 **Latência e erro vêm de `http.server.request.duration`**, com agregações de percentil habilitadas por
 `datadog_metric_tag_configuration` em `terraform/metrics.tf`.
 
-O nome de uma métrica OTLP é definido pela especificação de convenções semânticas do OpenTelemetry, e **não
-muda com a versão do agente**. É essa estabilidade que se está comprando com o custo de custom metrics.
+O nome de uma métrica OTLP é definido pelas convenções semânticas do OpenTelemetry. A escolha preserva a
+fonte não amostrada e as dimensões já indexadas, ao custo de custom metrics.
 
 ## Alternativas consideradas
 
 | Alternativa | Por que não |
 | --- | --- |
-| **`trace.<operação>.*` do APM** | Nome derivado do escopo de instrumentação e **instável entre versões do agente**. Gratuito, mas o preço é uma quebra silenciosa numa atualização de rotina |
-| **Percentis a partir de logs** (`@oficina.http.server.request.duration_ms`) | Depende da retenção do índice de logs, tem precisão pior e custo por GB indexado. Fica registrado como o fallback caso a alavanca de custo precise ser acionada |
+| **`trace.http.server.request` do APM** | Fonte derivada dos spans recebidos pelo Agent; a escolha atual mantém o pipeline de métricas independente do de traces e as dimensões configuradas nos monitores |
+| **Percentis a partir de logs** (`@oficina.http.server.request.duration_ms`) | Depende da retenção do índice de logs, tem precisão pior e custo por GB indexado |
 | **Só `avg` e `max`, sem habilitar percentis** | Gratuito, mas média esconde a cauda — e p95 é requisito explícito, não preferência. A média de uma rota que responde em 20 ms com 5 % de requisições em 3 s parece saudável |
 | **`include_percentiles` sem limitar as tags** | Custo descontrolado: as seis dimensões emitidas multiplicariam as séries indexadas por ordens de grandeza |
 
@@ -70,21 +59,10 @@ muda com a versão do agente**. É essa estabilidade que se está comprando com 
 - **`p95:db.client.operation.duration` e `p95:aws.lambda.enhanced.duration` continuam indisponíveis**, e
   deliberadamente: habilitá-las multiplicaria o custo sem que nenhum monitor dependa delas. Esses widgets usam
   média e máximo, com nota explicando a escolha.
+- Uma eventual troca da métrica OTLP exige decisão explícita: revisar widgets e consultas, comparar cobertura
+  e dimensões entre as fontes e recalibrar os limiares com dados da fonte escolhida. A versão do Agent não
+  migra esses consumidores automaticamente; a decisão vigente continua sendo usar a métrica OTLP.
 
-## Gatilho de reavaliação
+## Referências
 
-**O agente do cluster subir para ≥ 7.66.** Há um Pull Request aberto e não aprovado no repositório
-`oficina-mecanica-app` subindo a imagem de `7.60.0` para `7.83.1` — **o gatilho dispara no merge dele**.
-
-Quando a operação passar a se chamar `http.server.request`, `trace.http.server.request.*` vira um nome estável
-e legível, com percentis **gratuitos**. Nesse dia esta decisão deve ser reaberta: migrar latência para as
-*trace metrics* eliminaria ~960 custom metrics, que é praticamente todo o custo deste repositório.
-
-**A migração não é automática nem barata.** Ela reescreve o grupo de Latência e a tabela de rotas do dashboard
-de API, a consulta do monitor de latência, e torna `terraform/metrics.tf` desnecessário. Também troca a fonte do dado: *trace
-metrics* são amostradas e a métrica OTLP não é, então os números não são idênticos e os limiares do monitor de latência
-precisariam ser recalibrados sobre a nova fonte.
-
-Por isso o gatilho fica registrado aqui, como decisão a tomar, e não como pendência a executar. O que **não**
-muda com a atualização: o nome `http.server.request.duration` continua definido pela convenção semântica do
-OpenTelemetry e segue estável — a configuração atual não quebra.
+- [Amostragem de ingestão com OpenTelemetry](https://docs.datadoghq.com/opentelemetry/ingestion_sampling/)

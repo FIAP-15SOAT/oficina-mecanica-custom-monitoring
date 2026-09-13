@@ -18,7 +18,7 @@ resource "datadog_dashboard" "api" {
 
   widget {
     note_definition {
-      content          = "**Onde a API está lenta, e por quê?** Janela padrão de 1 hora. Os grupos seguem o caminho da requisição: entrada, dependência, processo, evidência.\n\nLatência vem de `http.server.request.duration` (OTLP, em **segundos**), não das métricas de trace do APM — o nome da operação delas muda com a versão do agente.\n\nAs dimensões indexadas desta métrica são **apenas** `env`, `service`, `http.route` e `http.response.status_code` — quebrar por método HTTP ou por versão não é possível aqui, porque são dimensões descartadas do índice para conter o custo de custom metrics."
+      content          = "**Onde a API está lenta, e por quê?** Janela padrão de 1 hora. Os grupos seguem o caminho da requisição: entrada, dependência, processo, evidência.\n\nLatência vem de `http.server.request.duration` (OTLP, em **segundos**), não das *trace metrics* do APM. A fonte escolhida preserva as dimensões usadas pelos consumidores e permanece independente da amostragem de traces.\n\nAs dimensões indexadas desta métrica são **apenas** `env`, `service`, `http.route` e `http.response.status_code` — quebrar por método HTTP ou por versão não é possível aqui, porque são dimensões descartadas do índice para conter o custo de custom metrics."
       background_color = "blue"
       font_size        = "14"
       text_align       = "left"

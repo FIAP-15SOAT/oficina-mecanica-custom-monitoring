@@ -27,11 +27,11 @@ qualquer alerta:
    | Ordem | Repositório | Por quê depende do anterior |
    | ---: | --- | --- |
    | 1 | `oficina-mecanica-infra-base` | VPC e subnets |
-   | 2 | `oficina-mecanica-database` | precisa da rede |
-   | 3 | `oficina-mecanica-k8s` | precisa da rede; publica o listener do NLB |
-   | 4 | `oficina-mecanica-app` | precisa do cluster e do banco |
+   | 2 | `oficina-mecanica-infra-database` | precisa da rede |
+   | 3 | `oficina-mecanica-infra-k8s` | precisa da rede; publica o listener do NLB |
+   | 4 | `oficina-mecanica-api` | precisa do cluster e do banco |
    | 5 | `oficina-mecanica-lambda-customer-auth` | precisa da rede e do banco |
-   | 6 | `oficina-mecanica-gateway` | precisa do listener do NLB e da Lambda; **publica `api_endpoint`** |
+   | 6 | `oficina-mecanica-api-gateway` | precisa do listener do NLB e da Lambda; **publica `api_endpoint`** |
    | 7 | **`oficina-mecanica-custom-monitoring`** | **precisa de `api_endpoint`** |
 
 4. **Ajustar `ENVIRONMENT_ONLINE` para `true`** nas variables deste repositório.
@@ -115,7 +115,7 @@ como redundância assumida.
 3. Em `critical` (90 %), o encerramento por falta de memória é iminente. Se o alerta de reinícios disparar em seguida, ele
    aconteceu.
 4. Mitigação imediata: reiniciar o deployment. Correção: investigar o vazamento ou subir o limite no
-   repositório `oficina-mecanica-app`.
+   repositório `oficina-mecanica-api`.
 
 ### Pod · Reinícios de contêiner · **P3**
 

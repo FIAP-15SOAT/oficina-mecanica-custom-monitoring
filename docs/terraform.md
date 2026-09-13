@@ -188,9 +188,8 @@ o repositório não usa `tflint`, `checkov` nem `trivy config` — ver [CI/CD](c
 
 ## Importação
 
-A conta não tinha dashboards, monitores nem testes sintéticos antes da primeira entrega: **não houve nada a
-importar**. Se algum dia um recurso da solução for criado à mão na interface, o caminho é um dos dois, nunca a
-convivência:
+Recursos da solução devem permanecer sob ownership exclusivo do Terraform. Se um recurso correspondente já
+existir na conta fora do state, o caminho é um dos dois, nunca a convivência:
 
 ```bash
 # importar para o state

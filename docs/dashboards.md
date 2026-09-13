@@ -115,7 +115,7 @@ sobre uma métrica do namespace `aws.`, o que **descartaria as tags não listada
 de que o widget ao lado depende. Média e máximo são gratuitos e respondem à mesma pergunta neste volume de
 invocações. Gatilho para reavaliar: volume de invocações que torne a média enganosa.
 
-O grupo escopa por `functionname` e **não** por `env`, por L8.
+O grupo escopa por `functionname`, identificador estável e suficiente para a única Lambda monitorada.
 
 ---
 
@@ -242,11 +242,10 @@ Widgets de métrica exibem `in_diagnosis`; widgets de log exibem o enum de domí
 fontes, e não é corrigível aqui. Com o funil migrado para a métrica, resta um único widget de log nesta
 página — o de decisões de orçamento, que agrupa por nome de evento e não por status.
 
-### `quote.rejected` nunca foi observado
+### Decisões de orçamento sem ocorrências
 
-Uma nota amarela no grupo de transições registra: em 30 dias há uma ocorrência de `quote.approved` e **zero**
-de recusa (L15). O widget ficará com uma única barra até que uma recusa aconteça — ausência de evento, não
-defeito da consulta.
+O widget agrupa as decisões pelos eventos `quote.approved` e `quote.rejected` (L15). Se não houver uma
+recusa no intervalo selecionado, não haverá barra de recusas — ausência de evento, não defeito da consulta.
 
 ---
 
