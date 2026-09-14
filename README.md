@@ -196,3 +196,4 @@ do gateway** — o endereço público muda a cada reprovisionamento. O ritual co
 
 Projeto acadêmico (FIAP — 15SOAT), para fins educacionais. Sem licença aberta declarada
 (`UNLICENSED`).
+
