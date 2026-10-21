@@ -17,7 +17,7 @@ variable "env" {
 variable "api_service" {
   description = "`service` tag of the API"
   type        = string
-  default     = "oficina-mecanica-api"
+  default     = "oficina-mecanica-work-order-service"
 }
 
 variable "api_kube_deployment" {

@@ -39,7 +39,7 @@ Recursos ligados a um componente carregam também `service:<serviço>`:
 
 | Recurso | Tag de serviço |
 | --- | --- |
-| Teste sintético e todos os monitores da API, do fluxo de negócio, dos pods e das integrações | `service:oficina-mecanica-api` |
+| Teste sintético e todos os monitores da API, do fluxo de negócio, dos pods e das integrações | `service:oficina-mecanica-work-order-service` |
 | Erros de execução da Lambda | `service:oficina-mecanica-lambda-customer-auth` |
 
 **Dashboards são a exceção, e ela é imposta pelo destino.** A API de dashboards aceita **apenas** as chaves

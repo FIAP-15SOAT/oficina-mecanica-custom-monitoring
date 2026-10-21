@@ -160,7 +160,7 @@ entrega contínua e arquitetura de observabilidade.
 
 | Repositório | Papel | Relação com este repositório |
 | --- | --- | --- |
-| `oficina-mecanica-api` | API principal (NestJS) e manifestos do cluster | **Origem** de métricas, traces e logs da API. Dono do agente Datadog e da instrumentação. Alterar o que é coletado é mudança lá, não aqui |
+| `oficina-mecanica-work-order-service` | API principal (NestJS) e manifestos do cluster | **Origem** de métricas, traces e logs da API. Dono do agente Datadog e da instrumentação. Alterar o que é coletado é mudança lá, não aqui |
 | `oficina-mecanica-lambda-customer-auth` | Autenticação de clientes | Origem das métricas *enhanced* e dos logs da função. O monitor de erros de execução a observa por `functionname` |
 | `oficina-mecanica-api-gateway` | API Gateway | **Publica `api_endpoint`**, que o teste sintético verifica. Este repositório lê o output do state dele |
 | `oficina-mecanica-infra-k8s` | Cluster EKS | Executa a API e o agente. Origem das métricas de contêiner, pod e nó |

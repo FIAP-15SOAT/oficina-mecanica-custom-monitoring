@@ -79,9 +79,9 @@ o que procurar.
 
 | Widget | Consulta |
 | --- | --- |
-| Requisições por minuto | `count:http.server.request.duration{env:production,service:oficina-mecanica-api}.as_count().rollup(sum, 60)` |
+| Requisições por minuto | `count:http.server.request.duration{env:production,service:oficina-mecanica-work-order-service}.as_count().rollup(sum, 60)` |
 | Respostas 5xx (% do total) | `(count:…{…,http.response.status_code:5*}.as_count() / count:…{…}.as_count()) * 100` — verde ≤ 1 %, amarelo > 1 %, vermelho > 5 % |
-| Latência p95 (s) | `p95:http.server.request.duration{env:production,service:oficina-mecanica-api}` — cores nos limiares do monitor de latência |
+| Latência p95 (s) | `p95:http.server.request.duration{env:production,service:oficina-mecanica-work-order-service}` — cores nos limiares do monitor de latência |
 
 ### Negócio
 

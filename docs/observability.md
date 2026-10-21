@@ -78,7 +78,7 @@ Conforme o mapeamento oficial OTel → Datadog, aplicável a métricas:
 
 | Atributo OTel | Tag Datadog | Confirmado |
 | --- | --- | --- |
-| `service.name` | `service` | `oficina-mecanica-api` |
+| `service.name` | `service` | `oficina-mecanica-work-order-service` |
 | `deployment.environment.name` | `env` | `production` |
 | `service.version` | `version` | o SHA do commit |
 
@@ -108,7 +108,7 @@ Ver a limitação L14.
 
 ### 2.6 Logs
 
-`service:oficina-mecanica-api`, `env:production`, `source:ecr-oficina-mecanica-app-repo`,
+`service:oficina-mecanica-work-order-service`, `env:production`, `source:ecr-oficina-mecanica-app-repo`,
 `cluster_name:oficina-mecanica`, `pod_name`, `container_name:api`, `status` derivado de `level`.
 
 O logger instrumentado da API inclui `trace_id`, `span_id` e `trace_flags` quando existe contexto de span

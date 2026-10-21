@@ -9,7 +9,7 @@
 
 project_name = "oficina-mecanica"
 env          = "production"
-api_service  = "oficina-mecanica-api"
+api_service  = "oficina-mecanica-work-order-service"
 
 api_kube_deployment  = "oficina-api"
 kube_cluster_name    = "oficina-mecanica"
