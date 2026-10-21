@@ -128,13 +128,13 @@ curl -s -H "DD-API-KEY: $TF_VAR_datadog_api_key" -H "DD-APPLICATION-KEY: $TF_VAR
 # uma consulta de métrica, com dados
 curl -s -G -H "DD-API-KEY: $TF_VAR_datadog_api_key" -H "DD-APPLICATION-KEY: $TF_VAR_datadog_app_key" \
   --data-urlencode "from=$(( $(date +%s) - 86400 ))" --data-urlencode "to=$(date +%s)" \
-  --data-urlencode "query=count:http.server.request.duration{env:production,service:oficina-mecanica-api} by {http.route}" \
+  --data-urlencode "query=count:http.server.request.duration{env:production,service:oficina-mecanica-work-order-service} by {http.route}" \
   "https://api.us5.datadoghq.com/api/v1/query"
 
 # valores de uma faceta de log
 curl -s -X POST -H "DD-API-KEY: $TF_VAR_datadog_api_key" -H "DD-APPLICATION-KEY: $TF_VAR_datadog_app_key" \
   -H "Content-Type: application/json" \
-  -d '{"filter":{"query":"service:oficina-mecanica-api","from":"now-30d","to":"now"},
+  -d '{"filter":{"query":"service:oficina-mecanica-work-order-service","from":"now-30d","to":"now"},
        "compute":[{"aggregation":"count","type":"total"}],
        "group_by":[{"facet":"@oficina.event.name","limit":50}]}' \
   "https://api.us5.datadoghq.com/api/v2/logs/analytics/aggregate"

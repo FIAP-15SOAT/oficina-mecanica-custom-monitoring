@@ -17,7 +17,7 @@ variable "env" {
 variable "api_service" {
   description = "`service` tag of the API"
   type        = string
-  default     = "oficina-mecanica-api"
+  default     = "oficina-mecanica-work-order-service"
 }
 
 variable "api_kube_deployment" {
@@ -99,7 +99,7 @@ variable "gateway_state_bucket" {
 variable "gateway_state_key" {
   description = "S3 object key for the gateway Terraform state (source of api_endpoint)"
   type        = string
-  default     = "infra/prod-simulated/gateway/terraform.tfstate"
+  default     = "infra/prod-simulated/api-gateway/terraform.tfstate"
 }
 
 variable "gateway_state_region" {

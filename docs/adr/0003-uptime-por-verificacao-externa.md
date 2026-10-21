@@ -6,7 +6,7 @@ Aceito — 2026-09-09
 
 ## Contexto
 
-O ADR 0005 do repositório `oficina-mecanica-api` exclui as rotas de saúde da instrumentação de entrada por
+O ADR 0005 do repositório `oficina-mecanica-work-order-service` exclui as rotas de saúde da instrumentação de entrada por
 `ignoreIncomingRequestHook`. Uma probe do Kubernetes a cada poucos segundos, multiplicada por réplicas,
 dominaria o volume de traces e métricas sem representar tráfego de usuário. A disponibilidade pública é,
 portanto, medida pelo teste sintético externo declarado neste repositório.

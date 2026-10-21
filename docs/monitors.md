@@ -110,7 +110,7 @@ identificador. O valor vem da variable `ENVIRONMENT_ONLINE`; o ritual está no [
 **Arquivo**: `terraform/monitors_api.tf` · **Prioridade**: P2 · **Dashboard**: API
 
 ```
-sum(last_10m):count:http.server.request.duration{env:production,service:oficina-mecanica-api,
+sum(last_10m):count:http.server.request.duration{env:production,service:oficina-mecanica-work-order-service,
   http.response.status_code:5*} by {http.route}.as_count() > 20
 ```
 
@@ -136,7 +136,7 @@ para 5xx e erro de transporte.
 **Arquivo**: `terraform/monitors_api.tf` · **Prioridade**: P3 · **Dashboard**: API (grupo Latência)
 
 ```
-percentile(last_15m):p95:http.server.request.duration{env:production,service:oficina-mecanica-api} > 2
+percentile(last_15m):p95:http.server.request.duration{env:production,service:oficina-mecanica-work-order-service} > 2
 ```
 
 | Warning | Critical | Janela | Agrupamento |
@@ -163,7 +163,7 @@ sem a configuração, a consulta responde `missing_aggregation` (L6).
 **Arquivo**: `terraform/monitors_work_orders.tf` · **Prioridade**: P2 · **Dashboard**: Ordens de Serviço
 
 ```
-sum(last_10m):count:http.server.request.duration{env:production AND service:oficina-mecanica-api
+sum(last_10m):count:http.server.request.duration{env:production AND service:oficina-mecanica-work-order-service
   AND http.response.status_code:5*
   AND (http.route:/api/work-orders* OR http.route:/api/quotes*)} by {http.route}.as_count() > 5
 ```
@@ -270,7 +270,7 @@ justamente quando a série enfim aparecesse.
 **Arquivo**: `terraform/monitors_integrations.tf` · **Prioridade**: P4 · **Dashboard**: API
 
 ```
-logs("service:oficina-mecanica-api env:production @oficina.event.name:mail.send.failed")
+logs("service:oficina-mecanica-work-order-service env:production @oficina.event.name:mail.send.failed")
   .index("*").rollup("count").by("@oficina.mail.error.category").last("15m") > 5
 ```
 
@@ -294,7 +294,7 @@ não há contagem de falhas para comparar ao limiar; ausência de ocorrência n�
 **Arquivo**: `terraform/monitors_integrations.tf` · **Prioridade**: P3 · **Dashboard**: API
 
 ```
-logs("service:oficina-mecanica-api env:production @oficina.event.name:health.degraded")
+logs("service:oficina-mecanica-work-order-service env:production @oficina.event.name:health.degraded")
   .index("*").rollup("count").by("@oficina.health.failure.category").last("10m") > 0
 ```
 
