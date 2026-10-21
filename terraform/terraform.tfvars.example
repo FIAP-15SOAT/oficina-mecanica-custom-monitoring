@@ -17,7 +17,7 @@ lambda_function_name = "lbd-oficina-mecanica-customer-auth"
 
 aws_region           = "us-east-1"
 gateway_state_bucket = "bkt-oficina-mecanica"
-gateway_state_key    = "infra/prod-simulated/gateway/terraform.tfstate"
+gateway_state_key    = "infra/prod-simulated/api-gateway/terraform.tfstate"
 gateway_state_region = "us-east-1"
 
 datadog_api_url = "https://api.us5.datadoghq.com/"

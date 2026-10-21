@@ -99,7 +99,7 @@ Declarado em `data.tf`, separado de `providers.tf`:
 ```hcl
 data "terraform_remote_state" "gateway" {
   backend = "s3"
-  config  = { bucket = …, key = "infra/prod-simulated/gateway/terraform.tfstate", region = … }
+  config  = { bucket = …, key = "infra/prod-simulated/api-gateway/terraform.tfstate", region = … }
 }
 ```
 
