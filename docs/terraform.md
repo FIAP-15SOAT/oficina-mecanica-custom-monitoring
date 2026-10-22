@@ -74,7 +74,6 @@ motivo de cada escopo estão em [CI/CD](ci-cd.md#inventário-de-configuração-e
 
 ```hcl
 backend "s3" {
-  bucket       = "bkt-oficina-mecanica"
   key          = "infra/prod-simulated/custom-monitoring/terraform.tfstate"
   region       = "us-east-1"
   encrypt      = true
@@ -82,7 +81,9 @@ backend "s3" {
 }
 ```
 
-O mesmo bucket dos demais repositórios da solução, sob chave própria. `encrypt` para criptografia em repouso;
+O bucket não é declarado no arquivo: ele vem da variável de Actions da organização `TF_STATE_BUCKET`, passada
+no `terraform init` por `-backend-config="bucket=$TF_STATE_BUCKET"`, para que o nome possa ser trocado sem editar
+arquivo versionado ([ADR 0004](adr/0004-state-no-s3-compartilhado.md)). O mesmo bucket dos demais repositórios da solução, sob chave própria. `encrypt` para criptografia em repouso;
 `use_lockfile` para a trava nativa por arquivo de lock, que faz a segunda execução simultânea **falhar** em vez
 de corromper o state.
 
@@ -125,7 +126,8 @@ Três grupos, todos em `variables.tf`:
 | Identidade | `project_name`, `env`, `api_service`, `api_kube_deployment`, `kube_cluster_name`, `lambda_function_name` | `terraform.tfvars`, versionado |
 | Credenciais e destino | `datadog_api_key`, `datadog_app_key` (sensíveis, sem padrão), `datadog_api_url`, `datadog_app_url` | as duas primeiras por `TF_VAR_`; as outras, padrão versionado |
 | Alerta e estado | `alert_emails`, `environment_online` | `TF_VAR_`, das variables do repositório |
-| State remoto | `gateway_state_*`, `aws_region` | `terraform.tfvars` |
+| State remoto | `gateway_state_key`, `gateway_state_region`, `aws_region` | `terraform.tfvars` |
+| Bucket do state do gateway | `gateway_state_bucket` | `TF_VAR_gateway_state_bucket`, preenchida pelos workflows com `TF_STATE_BUCKET` |
 | Limiares | doze variáveis, uma por limiar de monitor | `terraform.tfvars`, versionado |
 | Verificação externa | `synthetic_locations`, `synthetic_tick_every_seconds`, `synthetic_min_location_failed`, `synthetic_min_failure_duration_seconds`, `synthetic_response_time_ms` | `terraform.tfvars`, versionado |
 

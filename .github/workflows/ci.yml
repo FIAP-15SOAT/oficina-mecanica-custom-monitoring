@@ -15,6 +15,8 @@ permissions:
 
 env:
   AWS_REGION: us-east-1
+  TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+  TF_VAR_gateway_state_bucket: ${{ vars.TF_STATE_BUCKET }}
 
 jobs:
   tf-validate:
@@ -70,7 +72,7 @@ jobs:
           TF_VAR_alert_emails: ${{ vars.ALERT_EMAILS }}
           TF_VAR_environment_online: ${{ vars.ENVIRONMENT_ONLINE == 'true' }}
         run: |
-          terraform init -reconfigure -no-color
+          terraform init -reconfigure -no-color -backend-config="bucket=$TF_STATE_BUCKET"
           terraform plan -no-color
 
       - name: Note skipped plan in job summary

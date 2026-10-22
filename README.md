@@ -61,7 +61,7 @@ de configuração.
 | --- | --- | --- |
 | IaC | Terraform ≥ 1.11 | Mesmo piso de versão da solução; `templatestring` para a mensagem única |
 | Provider | `DataDog/datadog` `>= 4.20.0, < 5.0.0` | HCL tipado, validado no `plan` — [ADR 0001](docs/adr/0001-terraform-com-provider-datadog.md) |
-| State | S3 `bkt-oficina-mecanica`, trava nativa | Compartilhado com a solução — [ADR 0004](docs/adr/0004-state-no-s3-compartilhado.md) |
+| State | S3 no bucket da variável de Actions da organização `TF_STATE_BUCKET`, trava nativa | Compartilhado com a solução — [ADR 0004](docs/adr/0004-state-no-s3-compartilhado.md) |
 | Latência | métrica OTLP `http.server.request.duration` | Nome estável entre versões do agente — [ADR 0002](docs/adr/0002-latencia-por-metrica-otlp.md) |
 | Disponibilidade | teste sintético externo | Única forma possível — [ADR 0003](docs/adr/0003-uptime-por-verificacao-externa.md) |
 | Esteira | GitHub Actions | `Terraform Validation` + `Open Pull Request`; `plan`/`apply` com environment `production` |
@@ -96,8 +96,10 @@ export AWS_ACCESS_KEY_ID=... AWS_SECRET_ACCESS_KEY=... AWS_SESSION_TOKEN=...
 export TF_VAR_datadog_api_key=... TF_VAR_datadog_app_key=...
 export TF_VAR_alert_emails='voce@exemplo.com'
 export TF_VAR_environment_online=false
+export TF_STATE_BUCKET=<nome do bucket>
+export TF_VAR_gateway_state_bucket="$TF_STATE_BUCKET"
 
-terraform init -reconfigure
+terraform init -reconfigure -backend-config="bucket=$TF_STATE_BUCKET"
 terraform plan -lock=false
 ```
 
@@ -127,7 +129,7 @@ Passo a passo completo, incluindo como consultar a conta sem passar pelo Terrafo
 │   ├── monitors_kubernetes.tf      memória e reinícios de pod
 │   ├── monitors_lambda.tf          erros de execução da Lambda
 │   ├── monitors_integrations.tf    envio de e-mail, dependência
-│   ├── terraform.tfvars               configuração versionada do laboratório
+│   ├── terraform.tfvars               configuração estável da stack
 │   └── terraform.tfvars.example       referência para configuração local
 ├── docs/                           documentação e ADRs
 ├── .github/workflows/              ci.yml e cd.yml

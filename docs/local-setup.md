@@ -53,6 +53,13 @@ export TF_VAR_alert_emails='alguem@exemplo.com,outro@exemplo.com'
 export TF_VAR_environment_online=false
 ```
 
+O bucket de state também vem do shell: ele fica em variável, para ser trocado sem editar arquivo versionado:
+
+```bash
+export TF_STATE_BUCKET=<nome do bucket>
+export TF_VAR_gateway_state_bucket="$TF_STATE_BUCKET"
+```
+
 Confirme as chaves antes de gastar tempo com o Terraform:
 
 ```bash
@@ -65,7 +72,7 @@ curl -H "DD-API-KEY: $TF_VAR_datadog_api_key" \
 > **Use os seus próprios endereços em `TF_VAR_alert_emails` ao testar.** Um `plan` não notifica ninguém, mas um
 > `apply` acidental reconfiguraria os nove monitores com os destinatários que você exportou.
 
-`terraform.tfvars` já está versionado com todos os valores não sensíveis — identidade, state remoto e os doze
+`terraform.tfvars` já está versionado com os valores não sensíveis — identidade, chave e região do state remoto e os doze
 limiares. Não é preciso copiar nada; `terraform.tfvars.example` existe como referência do formato.
 
 ### 3. Verificação estrutural, sem credencial nenhuma
@@ -81,7 +88,7 @@ terraform validate
 ### 4. Prévia contra a conta real
 
 ```bash
-terraform init -reconfigure
+terraform init -reconfigure -backend-config="bucket=$TF_STATE_BUCKET"
 terraform plan
 ```
 
@@ -161,8 +168,8 @@ devolve `400 input_validation_error`. Omita-o.
 | Sintoma | Causa | Solução |
 | --- | --- | --- |
 | `explicit deny ... voc-cancel-cred` | Sessão do laboratório expirada | Renovar as credenciais no AWS Academy |
-| `Backend initialization required` | Backend ainda não configurado nesta cópia | `terraform init -reconfigure` |
+| `Backend initialization required` | Backend ainda não configurado nesta cópia | `terraform init -reconfigure -backend-config="bucket=$TF_STATE_BUCKET"` |
 | `This object does not have an attribute named "api_endpoint"` | Gateway destruído: state vazio | Subir o gateway antes, ou aceitar que o teste sintético não pode ser planejado |
 | `missing_aggregation :: AGG_AVG/AGG_P95` | Configuração de tags da métrica ainda não aplicada | Esperado antes do primeiro `apply` |
 | `Error acquiring the state lock` | A esteira está aplicando | Aguardar |
-| `terraform console` reclama do backend | `console` também precisa do backend inicializado | `terraform init -reconfigure` antes |
+| `terraform console` reclama do backend | `console` também precisa do backend inicializado | `terraform init -reconfigure -backend-config="bucket=$TF_STATE_BUCKET"` antes |
