@@ -7,7 +7,6 @@ kube_cluster_name    = "oficina-mecanica"
 lambda_function_name = "lbd-oficina-mecanica-customer-auth"
 
 aws_region           = "us-east-1"
-gateway_state_bucket = "bkt-oficina-mecanica"
 gateway_state_key    = "infra/prod-simulated/api-gateway/terraform.tfstate"
 gateway_state_region = "us-east-1"
 

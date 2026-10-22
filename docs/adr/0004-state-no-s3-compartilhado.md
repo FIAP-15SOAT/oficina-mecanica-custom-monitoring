@@ -21,7 +21,6 @@ state do gateway exige credenciais AWS de qualquer forma — ver [ADR 0003](0003
 
 ```hcl
 backend "s3" {
-  bucket       = "bkt-oficina-mecanica"
   key          = "infra/prod-simulated/custom-monitoring/terraform.tfstate"
   region       = "us-east-1"
   encrypt      = true
@@ -29,7 +28,11 @@ backend "s3" {
 }
 ```
 
-O mesmo bucket dos outros cinco repositórios da solução, sob chave própria, seguindo a convenção de caminho já
+O bucket não é declarado no arquivo: ele vem da variável de Actions da organização `TF_STATE_BUCKET`, passada
+no `terraform init` por `-backend-config="bucket=$TF_STATE_BUCKET"`. O nome de bucket S3 é único em toda a AWS, e,
+quando uma conta do AWS Academy é encerrada, o bucket fica preso nela com o nome, sem que a equipe consiga
+apagá-lo ou renomeá-lo. Por isso cada conta nova cria o bucket com um nome novo, e a troca acontece só na
+variável, sem editar arquivo versionado. O mesmo bucket dos outros cinco repositórios da solução, sob chave própria, seguindo a convenção de caminho já
 estabelecida. `encrypt` para criptografia em repouso; `use_lockfile` para a trava nativa por arquivo de lock,
 que dispensa a tabela DynamoDB do padrão antigo.
 

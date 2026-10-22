@@ -93,7 +93,6 @@ variable "environment_online" {
 variable "gateway_state_bucket" {
   description = "S3 bucket name that stores the gateway Terraform state"
   type        = string
-  default     = "bkt-oficina-mecanica"
 }
 
 variable "gateway_state_key" {

@@ -32,7 +32,7 @@ Cancela execução anterior da mesma branch: só o último push interessa.
 | 5 | Terraform Validate Monitoring | Executa `terraform validate -no-color` com os schemas instalados. | Há inconsistência de sintaxe, tipo ou referência. |
 | 6 | Validate the telemetry application key | Verifica `DD_APP_KEY` antes da autenticação AWS. | A chave está ausente; é erro de configuração, mesmo quando a prévia AWS pode ser pulada. |
 | 7 | Configure AWS Credentials | Configura access key, secret key e session token da mesma sessão AWS, em us-east-1; conserva `aws_creds.outcome` para decidir entre plan e nota de skip. | **Não reprova**: este step usa `continue-on-error: true`. |
-| 8 | Terraform Plan Monitoring | Só com `aws_creds.outcome == success`: executa init com backend (`-reconfigure`) e plan. | Qualquer comando de init/plan executado falha; essa falha não é tratada como skip. |
+| 8 | Terraform Plan Monitoring | Só com `aws_creds.outcome == success`: executa init com backend (`-reconfigure` e `-backend-config="bucket=$TF_STATE_BUCKET"`) e plan. | Qualquer comando de init/plan executado falha; essa falha não é tratada como skip. |
 | 9 | Note skipped plan in job summary | Só com `aws_creds.outcome == failure`: registra no resumo que a prévia foi pulada. | — (nota informativa). |
 
 **A diferença deliberada em relação aos demais stacks Terraform**: aqui o `plan` depende
@@ -96,7 +96,7 @@ possui reviewers nem política própria de branch; a restrição à `main` é fe
 | 2 | Validate required secrets and variables | Verifica `DD_API_KEY`, `DD_APP_KEY` e `ALERT_EMAILS` antes de instalar/autenticar. | Qualquer item está vazio; a mensagem identifica o que falta. |
 | 3 | Setup Terraform | Instala/configura a CLI Terraform para os comandos seguintes. | A instalação/configuração da CLI falha. |
 | 4 | Configure AWS Credentials | Configura access key, secret key e session token da mesma sessão AWS, em us-east-1. | As credenciais estão ausentes/inválidas ou a configuração da sessão falha; não há `continue-on-error` no CD. |
-| 5 | Terraform Init | Executa `terraform init -no-color`, instalando providers e configurando o backend S3 real. | A instalação dos providers ou o acesso/configuração do backend falha. |
+| 5 | Terraform Init | Executa `terraform init -no-color -backend-config="bucket=$TF_STATE_BUCKET"`, instalando providers e configurando o backend S3 real. | A instalação dos providers ou o acesso/configuração do backend falha. |
 | 6 | Terraform Validate | Executa `terraform validate -no-color`. | Há inconsistência de configuração. |
 | 7 | Terraform Plan | Executa `terraform plan -no-color`; consulta providers e states necessários e mostra as alterações. | Qualquer erro de plan, incluindo acesso aos states e APIs necessários. |
 | 8 | Terraform Apply | Executa `terraform apply -auto-approve -no-color`; calcula seu próprio plano, pois não há plano salvo no step anterior. | Qualquer erro ao planejar/aplicar os recursos. |
@@ -145,8 +145,9 @@ Tudo o que precisa existir fora do código. Reconfigurar o repositório do zero 
 | 5 | `ENVIRONMENT_ONLINE` | Variable | Repositório | **Sim** | alterna o teste sintético entre `live` e `paused` | CI, CD |
 | 6 | `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_SESSION_TOKEN` | Secrets | Organização | **Sim** no CD, opcional no CI | backend S3 e leitura do state do gateway | CI (prévia), CD |
 | 7 | `BOT_APP_ID` / `BOT_PRIVATE_KEY` | Variable / Secret | Organização | **Sim para abertura automática de PR** | `open-pr` gera o token sem condição; não são inputs da validação/aplicação Terraform | CI |
-| 8 | Environment `production` | — | Repositório | **Sim** | contexto de secrets/variables e histórico da entrega | CD |
-| 9 | Ruleset da `main` | — | Repositório | **Sim** | recusa push direto, exige Pull Request | — |
+| 8 | `TF_STATE_BUCKET` | Variable | Organização | **Sim** | nome do bucket de state, em variável para trocá-lo sem editar arquivo versionado: vai ao `terraform init` por `-backend-config` e a `TF_VAR_gateway_state_bucket`; sem ela, o `init` falha | CI, CD |
+| 9 | Environment `production` | — | Repositório | **Sim** | contexto de secrets/variables e histórico da entrega | CD |
+| 10 | Ruleset da `main` | — | Repositório | **Sim** | recusa push direto, exige Pull Request | — |
 
 A tabela define a configuração externa exigida; não é um snapshot de valores ou presença em uma data.
 Itens de organização podem não ser listáveis por um token de colaborador, e uma execução verde comprova
