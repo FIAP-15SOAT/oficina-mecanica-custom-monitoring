@@ -167,7 +167,7 @@ entrega contínua e arquitetura de observabilidade.
 | `oficina-mecanica-api-gateway` | API Gateway | **Publica `api_endpoint`**, que o teste sintético verifica. Este repositório lê o output do state dele |
 | `oficina-mecanica-infra-k8s` | Cluster EKS | Executa a API e o agente. Origem das métricas de contêiner, pod e nó |
 | `oficina-mecanica-infra-base` | Rede | Dono do bucket que guarda o state de toda a solução |
-| `oficina-mecanica-infra-database` | Banco | Observado indiretamente, pelas métricas de cliente da API |
+| `oficina-mecanica-infra-database-work-order` | Banco e cache (`work-order`) | Observado indiretamente, pelas métricas de cliente da API |
 | **`oficina-mecanica-custom-monitoring`** | **Este repositório** | Consome a telemetria de todos os anteriores. Não produz sinal; produz leitura |
 
 **A entrega deste repositório faz parte do ritual de subida do ambiente, depois da entrega
