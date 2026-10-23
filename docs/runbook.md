@@ -27,7 +27,7 @@ qualquer alerta:
    | Ordem | Repositório | Por quê depende do anterior |
    | ---: | --- | --- |
    | 1 | `oficina-mecanica-infra-base` | VPC e subnets |
-   | 2 | `oficina-mecanica-infra-database` | precisa da rede |
+   | 2 | `oficina-mecanica-infra-database-work-order` | precisa da rede |
    | 3 | `oficina-mecanica-infra-k8s` | precisa da rede; publica o listener do NLB |
    | 4 | `oficina-mecanica-work-order-service` | precisa do cluster e do banco |
    | 5 | `oficina-mecanica-lambda-customer-auth` | precisa da rede e do banco |
