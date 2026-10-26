@@ -84,7 +84,7 @@ Conforme o mapeamento oficial OTel → Datadog, aplicável a métricas:
 
 ### 2.4 Kubernetes
 
-Coletadas do *kubelet*, com `kube_deployment:oficina-api`, `pod_name`, `kube_namespace:oficina`,
+Coletadas do *kubelet*, com `kube_deployment:work-order-service`, `pod_name`, `kube_namespace:work-order`,
 `kube_container_name:api` e `kube_cluster_name:oficina-mecanica`.
 
 `kubernetes.cpu.usage.total` · `kubernetes.cpu.requests` · `kubernetes.cpu.limits` ·

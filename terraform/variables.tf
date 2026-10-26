@@ -23,7 +23,7 @@ variable "api_service" {
 variable "api_kube_deployment" {
   description = "Value of the `kube_deployment` tag that carries the API pods"
   type        = string
-  default     = "oficina-api"
+  default     = "work-order-service"
 }
 
 variable "kube_cluster_name" {

@@ -195,8 +195,8 @@ nomeação do impacto de negócio que o requisito pede.
 **Arquivo**: `terraform/monitors_kubernetes.tf` · **Prioridade**: P2 · **Dashboard**: Kubernetes
 
 ```
-avg(last_10m):(avg:kubernetes.memory.working_set{kube_deployment:oficina-api} by {pod_name}
-  / avg:kubernetes.memory.limits{kube_deployment:oficina-api} by {pod_name}) * 100 > 90
+avg(last_10m):(avg:kubernetes.memory.working_set{kube_deployment:work-order-service} by {pod_name}
+  / avg:kubernetes.memory.limits{kube_deployment:work-order-service} by {pod_name}) * 100 > 90
 ```
 
 | Warning | Critical | Janela | Agrupamento | `new_group_delay` |
@@ -212,7 +212,7 @@ avg(last_10m):(avg:kubernetes.memory.working_set{kube_deployment:oficina-api} by
 **Arquivo**: `terraform/monitors_kubernetes.tf` · **Prioridade**: P3 · **Dashboard**: Kubernetes
 
 ```
-max(last_10m):diff(max:kubernetes.containers.restarts{kube_deployment:oficina-api} by {pod_name}) > 0
+max(last_10m):diff(max:kubernetes.containers.restarts{kube_deployment:work-order-service} by {pod_name}) > 0
 ```
 
 | Warning | Critical | Janela | Agrupamento | `new_group_delay` |

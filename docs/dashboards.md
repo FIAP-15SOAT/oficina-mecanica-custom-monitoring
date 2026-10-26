@@ -94,7 +94,7 @@ o que procurar.
 
 | Widget | Consulta |
 | --- | --- |
-| Pods da API emitindo métrica | `count_nonzero(avg:kubernetes.memory.working_set{kube_deployment:oficina-api} by {pod_name})` |
+| Pods da API emitindo métrica | `count_nonzero(avg:kubernetes.memory.working_set{kube_deployment:work-order-service} by {pod_name})` |
 | Memória sobre o limite por pod (%) | `(working_set / limits) * 100 by {pod_name}` — cores nos limiares do monitor de memória |
 
 `kubernetes.containers.running` **não** é usada: ela responde `pod_name:N/A` e não permite a contagem por pod.
@@ -256,7 +256,7 @@ recusa no intervalo selecionado, não haverá barra de recusas — ausência de 
 
 | Grupo | Widget | Consulta |
 | --- | --- | --- |
-| CPU | CPU por pod contra requests e limits (cores) | `avg:kubernetes.cpu.usage.total{kube_deployment:oficina-api} by {pod_name} / 1e9`, sobreposta a `cpu.requests` e `cpu.limits` |
+| CPU | CPU por pod contra requests e limits (cores) | `avg:kubernetes.cpu.usage.total{kube_deployment:work-order-service} by {pod_name} / 1e9`, sobreposta a `cpu.requests` e `cpu.limits` |
 | CPU | Estrangulamento por pod (% dos períodos) | `(cfs.throttled.periods / cfs.periods) * 100 by {pod_name}` |
 | Memória | Working set por pod contra o limite (bytes) | `avg:kubernetes.memory.working_set{…} by {pod_name}` e `avg:kubernetes.memory.limits{…} by {pod_name}` |
 | Memória | Working set sobre o limite por pod (%) | a razão × 100, com marcadores nos limiares do monitor de memória |
