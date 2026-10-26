@@ -2,7 +2,7 @@ project_name = "oficina-mecanica"
 env          = "production"
 api_service  = "oficina-mecanica-work-order-service"
 
-api_kube_deployment  = "oficina-api"
+api_kube_deployment  = "work-order-service"
 kube_cluster_name    = "oficina-mecanica"
 lambda_function_name = "lbd-oficina-mecanica-customer-auth"
 
