@@ -18,6 +18,21 @@ output "dashboard_kubernetes_url" {
   value       = local.dashboard_url_kubernetes
 }
 
+output "dashboard_sagas_url" {
+  description = "Endereço do dashboard de Sagas."
+  value       = local.dashboard_url_sagas
+}
+
+output "dashboard_payments_url" {
+  description = "Endereço do dashboard de Pagamentos."
+  value       = local.dashboard_url_payments
+}
+
+output "dashboard_messaging_url" {
+  description = "Endereço do dashboard de Mensageria."
+  value       = local.dashboard_url_messaging
+}
+
 output "monitor_ids" {
   description = "Identificadores dos monitores: mapas por serviço ou por Lambda e os monitores únicos."
   value = {

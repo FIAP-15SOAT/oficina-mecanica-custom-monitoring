@@ -50,6 +50,9 @@ locals {
   dashboard_url_service     = { for k, d in datadog_dashboard.service : k => "${local.datadog_app_base}${d.url}" }
   dashboard_url_work_orders = "${local.datadog_app_base}${datadog_dashboard.work_orders.url}"
   dashboard_url_kubernetes  = "${local.datadog_app_base}${datadog_dashboard.kubernetes.url}"
+  dashboard_url_sagas       = "${local.datadog_app_base}${datadog_dashboard.sagas.url}"
+  dashboard_url_payments    = "${local.datadog_app_base}${datadog_dashboard.payments.url}"
+  dashboard_url_messaging   = "${local.datadog_app_base}${datadog_dashboard.messaging.url}"
 
   logs_url_service_errors = { for k, s in local.service_log_scope : k => "${var.datadog_app_url}logs?query=${urlencode("${s} status:error")}" }
   logs_url_health         = { for k, s in local.service_log_scope : k => "${var.datadog_app_url}logs?query=${urlencode("${s} @oficina.event.name:health.degraded")}" }

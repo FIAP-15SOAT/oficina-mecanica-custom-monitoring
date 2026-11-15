@@ -109,6 +109,9 @@ jobs:
             terraform output -json dashboard_service_urls | jq -r 'to_entries[] | "- [Serviço \(.key)](\(.value))"'
             echo "- [Ordens de Serviço]($(terraform output -raw dashboard_work_orders_url))"
             echo "- [Kubernetes]($(terraform output -raw dashboard_kubernetes_url))"
+            echo "- [Sagas]($(terraform output -raw dashboard_sagas_url))"
+            echo "- [Pagamentos]($(terraform output -raw dashboard_payments_url))"
+            echo "- [Mensageria]($(terraform output -raw dashboard_messaging_url))"
             echo ''
             echo "Testes sintéticos: \`$(terraform output -json synthetic_test_statuses | jq -r '[.[]] | unique | join(", ")')\` — controlados pela variable \`ENVIRONMENT_ONLINE\`."
           } >> "$GITHUB_STEP_SUMMARY"
