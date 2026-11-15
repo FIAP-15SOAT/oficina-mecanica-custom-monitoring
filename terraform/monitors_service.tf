@@ -14,7 +14,7 @@ resource "datadog_monitor" "service_5xx" {
   message = templatestring(local.monitor_message, {
     alert_symptom   = "Erros 5xx acima do limite"
     warning_symptom = "Erros 5xx subindo"
-    group_suffix    = " — rota `{{http.route.name}}`"
+    group_suffix    = " — rota `{{[http.route].name}}`"
     service         = each.value.service
     environment     = var.env
     unit            = "respostas 5xx"

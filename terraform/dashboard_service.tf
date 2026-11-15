@@ -1,3 +1,9 @@
+locals {
+  # The HTTP instrumentation also records AWS SDK calls; SQS long polling waits
+  # up to 20 s and would flatten every other destination on the chart.
+  outgoing_http_scope = "$env,$service,!server.address:sqs.us-east-1.amazonaws.com,!server.address:sns.us-east-1.amazonaws.com"
+}
+
 resource "datadog_dashboard" "service" {
   for_each = local.services
 
@@ -93,9 +99,9 @@ resource "datadog_dashboard" "service" {
         }
       }
 
-      # `top()` ordena e corta; quem reduz a série ao número exibido é o
-      # agregador do widget, cujo padrão é MÉDIA. Num widget que promete
-      # "requisições na janela", média por intervalo é a leitura errada.
+      # `top()` sorts and cuts; the widget aggregator reduces the series to the
+      # number shown, and its default is the MEAN. For a widget that promises
+      # "requests in the window", a per-interval mean is the wrong reading.
       widget {
         toplist_definition {
           title     = "Top 10 rotas por volume (requisições na janela)"
@@ -274,8 +280,8 @@ resource "datadog_dashboard" "service" {
             }
           }
 
-          # Os dois limiares do monitor de latência, desenhados: quem olha o
-          # gráfico vê onde o alerta dispara sem abrir a definição do monitor.
+          # Both latency monitor thresholds drawn on the chart, so the reader sees
+          # where the alert fires without opening the monitor.
           marker {
             display_type = "warning dashed"
             label        = "warning latência p95 (${var.api_latency_p95_warning_seconds}s)"
@@ -530,7 +536,7 @@ resource "datadog_dashboard" "service" {
               metric_query {
                 data_source = "metrics"
                 name        = "media"
-                query       = "avg:http.client.request.duration{$env,$service} by {server.address}"
+                query       = "avg:http.client.request.duration{${local.outgoing_http_scope}} by {server.address}"
               }
             }
           }
@@ -546,7 +552,7 @@ resource "datadog_dashboard" "service" {
               metric_query {
                 data_source = "metrics"
                 name        = "maximo"
-                query       = "max:http.client.request.duration{$env,$service} by {server.address}"
+                query       = "max:http.client.request.duration{${local.outgoing_http_scope}} by {server.address}"
               }
             }
 
@@ -575,7 +581,7 @@ resource "datadog_dashboard" "service" {
               metric_query {
                 data_source = "metrics"
                 name        = "chamadas"
-                query       = "count:http.client.request.duration{$env,$service} by {server.address,http.response.status_code}.as_count()"
+                query       = "count:http.client.request.duration{${local.outgoing_http_scope}} by {server.address,http.response.status_code}.as_count()"
               }
             }
           }

@@ -86,9 +86,9 @@ compensações da aprovação de orçamento e falha na limpeza do cache.
   solução ([Infraestrutura](../terraform.md#serviço-novo-é-uma-chave-no-mapa)). Em troca, o serviço precisa
   seguir o padrão de nomes, e os quatro dividem os mesmos limiares até a calibração mostrar motivo para
   separá-los.
-- **A contagem de recursos cresce com o número de serviços**: 10 dashboards e 33 monitores na conta. A conta
-  de custom metrics também: `http.server.request.duration` passa a ter séries dos quatro serviços, sem tag
-  nova indexada ([Observabilidade](../observability.md#5-custo-de-custom-metrics)).
+- **A contagem de recursos cresce com o número de serviços**, e a conta de custom metrics também:
+  `http.server.request.duration` passa a ter séries dos quatro serviços, sem tag nova indexada
+  ([Observabilidade](../observability.md#5-custo-de-custom-metrics)).
 - **Sem profundidade de fila**, uma fila parada sem nenhuma desistência não alerta. O que se vê é o consumo
   caindo no dashboard de Mensageria e, nas Sagas, iniciadas sem finalização.
 - **Os monitores que cobrem os quatro serviços num só** (DLQ, outbox e cache) ficam sem tag de serviço, para não

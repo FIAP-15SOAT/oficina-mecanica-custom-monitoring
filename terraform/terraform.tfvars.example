@@ -1,10 +1,10 @@
-# Copia deste arquivo para terraform.tfvars. Nenhum valor sensivel entra
-# aqui: as duas chaves do Datadog e a lista de destinatarios chegam por
-# variavel de ambiente -- ver docs/local-setup.md.
+# Copy this file to terraform.tfvars. No sensitive value goes here: the two
+# Datadog keys and the recipient list come from environment variables (see
+# docs/local-setup.md).
 #
 #   export TF_VAR_datadog_api_key=...
 #   export TF_VAR_datadog_app_key=...
-#   export TF_VAR_alert_emails='alguem@exemplo.com,outro@exemplo.com'
+#   export TF_VAR_alert_emails='someone@example.com,other@example.com'
 #   export TF_VAR_environment_online=false
 
 project_name      = "oficina-mecanica"

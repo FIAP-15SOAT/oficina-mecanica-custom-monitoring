@@ -82,9 +82,12 @@ Iguais nos quatro serviços, porque vêm do mesmo SDK e das mesmas instrumentaç
 (`http.route:/api/work-orders*`) funciona.
 
 `http.client.request.duration` mede as chamadas HTTP que um serviço faz: a outro serviço, pela rota interna
-`/internal`, ou ao Mercado Pago (`server.address:api.mercadopago.com`), no billing. **Não recebe configuração
-de tags**: os dashboards a consultam por média, máximo e contagem, que não exigem percentis, e nenhum monitor
-depende dela.
+`/internal`, ou ao Mercado Pago (`server.address:api.mercadopago.com`), no billing. Mede também as do SDK da
+AWS à fila SQS e ao tópico SNS (`sqs.us-east-1.amazonaws.com` e `sns.us-east-1.amazonaws.com`): a
+instrumentação HTTP grava a métrica de toda requisição de saída, mesmo quando não grava o span, e a leitura da
+fila espera até 20 s por mensagem; por isso o dashboard de serviço exclui esses dois hosts. **Não recebe
+configuração de tags**: os dashboards a consultam por média, máximo e contagem, que não exigem percentis, e
+nenhum monitor depende dela.
 
 `error.type` é preenchido **exclusivamente** para respostas 5xx ou erro de transporte. Mesmo assim, nenhuma
 consulta o usa: ele foi descartado do índice pela configuração de tags da seção 5, e
@@ -232,12 +235,11 @@ Seis códigos por rota é um teto: a maior parte das rotas responde dois ou trê
 real fica em `Organization Settings → Usage → Custom Metrics`, e o procedimento para registrá-lo está no
 [Runbook](runbook.md#cota-de-custom-metrics).
 
-As *distributions* de negócio (as três de ordem de serviço e `oficina.saga.duration`) **não** recebem a habilitação: elas continuam consultáveis por `avg`, `max`, `min`,
-`sum` e `count`, que são gratuitos, e nenhum monitor depende de percentil sobre elas. Habilitá-las dobraria o
-custo de cada uma sem responder nada que o máximo já não responda.
-
-As demais *distributions* — as de negócio, `http.client.request.duration` e `db.client.operation.duration` —
-também não recebem configuração e custam 5 custom metrics por combinação de tags emitida.
+As demais *distributions* — as três de ordem de serviço, `oficina.saga.duration`, `http.client.request.duration`
+e `db.client.operation.duration` — **não** recebem a habilitação nem outra configuração: custam 5 custom metrics
+por combinação de tags emitida e continuam consultáveis por `avg`, `max`, `min`, `sum` e `count`, que não
+custam nada a mais. Nenhum monitor depende de percentil sobre elas, e habilitá-las dobraria o custo de cada uma
+sem responder nada que o máximo já não responda.
 
 **A alavanca de redução é uma linha.** Remover `http.response.status_code` da lista de
 `http.server.request.duration` derruba a estimativa de ~3.960 para **~660** (66 séries × 10) e move "erro por

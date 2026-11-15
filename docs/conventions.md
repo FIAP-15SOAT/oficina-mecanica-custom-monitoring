@@ -101,10 +101,10 @@ por `service:<serviço>`. Dashboards ficam de fora por causa da restrição acim
 | --- | --- |
 | `env`, `service`, `version` | métricas dos serviços |
 | `http.route`, `http.response.status_code` | `http.server.request.duration`, depois da configuração de tags |
-| `server.address`, `http.response.status_code` | `http.client.request.duration`, a duração das chamadas HTTP que um serviço faz a outro serviço ou ao Mercado Pago; `server.address` é o host de destino |
+| `server.address`, `http.response.status_code` | `http.client.request.duration`, a duração das chamadas HTTP que um serviço faz a outro serviço ou ao Mercado Pago; `server.address` é o host de destino; as chamadas do SDK da AWS ao SQS e ao SNS também entram, e o dashboard de serviço as exclui |
 | `oficina.work_order.status` | métricas de ordem de serviço (valores em **minúsculas**) |
-| `oficina.saga.type` (`QUOTE_APPROVAL`, `PAYMENT`), `oficina.saga.outcome` (`completed`, `compensated`) | métricas de Saga do work-order |
-| `oficina.payment.status` (`APPROVED`, `REJECTED`, `EXPIRED`, `CANCELLED`) | `oficina.payment.resolved`, do billing |
+| `oficina.saga.type` (`quote_approval`, `payment`), `oficina.saga.outcome` (`completed`, `compensated`) | métricas de Saga do work-order (valores em **minúsculas**; no log, `@oficina.saga.type` é `QUOTE_APPROVAL` ou `PAYMENT`) |
+| `oficina.payment.status` (`approved`, `rejected`, `expired`, `cancelled`) | `oficina.payment.resolved`, do billing (valores em **minúsculas**) |
 | `outcome` | `oficina.messaging.consumed` (`success`, `retry`, `dead_lettered`) e `oficina.payment.webhook.received` (`valid`, `invalid_signature`) |
 | `messaging.destination.name` | `oficina.messaging.consumed`: a fila SQS consumida, como `inventory.fifo` |
 | `db.operation.name`, `db.client.connection.state` | métricas de banco |
@@ -212,18 +212,13 @@ terraform/
 **Nomes de recurso não repetem o tipo.** `datadog_monitor.pod_memory`, não
 `datadog_monitor.pod_memory_monitor`.
 
-**Um local usado por um só arquivo fica nesse arquivo**, num bloco `locals` no topo, como as URLs de log de
-`monitors_messaging.tf` e o escopo de `dashboard_kubernetes.tf`. `locals.tf` guarda só o que vários arquivos
-usam.
-
 ---
 
 ## Idioma
 
 - **Descrições de variável e nomes de recurso** seguem o inglês dos demais repositórios de infraestrutura da
   solução.
-- **Comentários de código** são em inglês nos arquivos mais recentes, como nos demais repositórios; parte dos
-  comentários mais antigos ainda está em português.
+- **Comentários de código** são em inglês, como nos demais repositórios.
 - **Tudo que o Datadog exibe** — título de dashboard, nome de monitor, título de widget, nota, mensagem de
   alerta — **é em português**, porque o público é o time.
 - **Documentação**: português.
@@ -237,7 +232,8 @@ usam.
 2. Consulta de alerta validada em `POST /api/v1/monitor/validate` antes do HCL.
 3. Nome e tags conforme este documento.
 4. Widget com `live_span`, título com unidade e uma só dimensão de quebra, ou duas quando a segunda é o
-   resultado (fila e resultado, destino e status).
+   resultado (fila e resultado, destino e status) ou só identifica o item da primeira (namespace e pod, fila e
+   tipo da mensagem).
 5. Documentação atualizada no documento certo, **sem duplicar consulta** que já viva em outro.
 6. `terraform fmt -check -recursive` e `terraform validate` passando — o CI reprova sem eles.
 7. Para monitor novo: a resposta à pergunta "o que a pessoa faz ao receber este e-mail?" escrita em

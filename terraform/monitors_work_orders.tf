@@ -19,7 +19,7 @@ resource "datadog_monitor" "work_order_failures" {
   message = templatestring(local.monitor_message, {
     alert_symptom   = "Falhas no fluxo de ordens de serviço"
     warning_symptom = "Falhas no fluxo de ordens de serviço subindo"
-    group_suffix    = " — serviço `{{service.name}}`, rota `{{http.route.name}}`"
+    group_suffix    = " — serviço `{{service.name}}`, rota `{{[http.route].name}}`"
     service         = "{{service.name}}"
     environment     = var.env
     unit            = "respostas 5xx em rotas de ordem de serviço ou orçamento"

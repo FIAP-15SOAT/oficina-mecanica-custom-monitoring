@@ -32,8 +32,9 @@ quatro, montada em `local.services_scope`.
 3. **Título com unidade.** `Latência p95 (s)`, `Working set por pod contra o limite (bytes)`,
    `Estrangulamento de CPU por pod (% dos períodos)`. Um número sem unidade não é uma leitura.
 4. **Uma dimensão de quebra por widget**, ou duas quando a segunda é o resultado: fila **e** resultado,
-   destino **e** status, tipo de Saga **e** desfecho. Rota **ou** status, pod **ou** nó. Dois eixos que não
-   são causa e resultado produzem um emaranhado que ninguém lê em incidente.
+   destino **e** status, tipo de Saga **e** desfecho. Também cabem dimensões que só identificam o item da
+   primeira: namespace **e** pod, fila **e** tipo da mensagem. Rota **ou** status, pod **ou** nó. Dois eixos
+   independentes produzem um emaranhado que ninguém lê em incidente.
 5. **Formatação condicional nos indicadores de erro e de saturação**, e só neles: `% de 5xx`, `p95`, `% do
    limite de memória`, `erros da Lambda`, `pods emitindo métrica`. Verde, amarelo e vermelho alinhados com os
    limiares dos monitores, para que o dashboard e o alerta contem a mesma história.
@@ -125,11 +126,13 @@ de serviços, na ordem alfabética das chaves.
 
 | Widget | Consulta |
 | --- | --- |
-| Pods dos serviços emitindo métrica | `count_nonzero(avg:kubernetes.memory.working_set{kube_namespace:work-order OR kube_namespace:identity OR …} by {kube_namespace,pod_name})` — vermelho abaixo de 4, verde a partir de 4 |
+| Serviços com pods emitindo métrica | `count_nonzero(avg:kubernetes.memory.working_set{kube_namespace:work-order OR kube_namespace:identity OR …} by {kube_namespace})` — vermelho abaixo de 4, verde a partir de 4 |
 | Memória sobre o limite por pod (%) | `(working_set / limits) * 100 by {kube_namespace,pod_name}` nos mesmos quatro namespaces — cores nos limiares do monitor de memória |
 
-**O vermelho fica abaixo de quatro**, e não abaixo de um, porque cada serviço roda ao menos um pod: com um
-limite de um, um serviço inteiro fora do ar continuaria verde enquanto os outros três emitissem métrica.
+**O vermelho fica abaixo de quatro**, e não abaixo de um, porque a contagem é de namespaces com ao menos um pod
+emitindo métrica: com um limite de um, um serviço inteiro fora do ar continuaria verde enquanto os outros três
+emitissem métrica. A contagem não é por pod porque o autoescalonamento roda até dois pods por serviço, e os
+pods a mais esconderiam um serviço sem nenhum.
 
 `kubernetes.containers.running` **não** é usada: ela responde `pod_name:N/A` e não permite a contagem por pod.
 E, por L1, esta contagem é de pods que **emitem métrica**, não de pods prontos.
@@ -222,11 +225,14 @@ span, não métrica: os eventos são o único sinal agregável que a aplicação
 
 | Widget | Consulta |
 | --- | --- |
-| Duração das chamadas HTTP de saída por destino — média e máximo (s) | `avg:` e `max:http.client.request.duration{$env,$service} by {server.address}` |
-| Chamadas HTTP de saída por destino e status | `count:http.client.request.duration{$env,$service} by {server.address,http.response.status_code}.as_count()`, em barras |
+| Duração das chamadas HTTP de saída por destino — média e máximo (s) | `avg:` e `max:http.client.request.duration{$env,$service,!server.address:sqs.us-east-1.amazonaws.com,!server.address:sns.us-east-1.amazonaws.com} by {server.address}` |
+| Chamadas HTTP de saída por destino e status | `count:http.client.request.duration{…mesmo escopo…} by {server.address,http.response.status_code}.as_count()`, em barras |
 
 `server.address` é o host chamado: outro serviço da solução, pela rota interna, ou o Mercado Pago, no billing.
-Um serviço que não chama ninguém deixa o grupo vazio.
+As chamadas que o SDK da AWS faz à fila SQS e ao tópico SNS também entram na métrica e ficam de fora do grupo:
+a leitura da fila espera até 20 s por mensagem (*long polling*) e achataria no zero as outras linhas do
+gráfico. O consumo e o outbox estão no grupo Fila e no dashboard de Mensageria. Um serviço que não chama
+ninguém deixa o grupo vazio.
 
 ### Fila
 

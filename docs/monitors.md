@@ -80,8 +80,9 @@ Desde: {{first_triggered_at}}
 
 Recursos usados, e por quê: blocos condicionais por estado, para não enviar a mesma mensagem em alerta e em
 recuperação; `{{value}}` e `{{threshold}}`, para dispensar a abertura da ferramenta; `{{<tag>.name}}`, para
-nomear o grupo afetado (rota, pod, serviço, fila); `{{first_triggered_at}}` e `{{triggered_duration_sec}}`,
-para duração; três links contextuais.
+nomear o grupo afetado (rota, pod, serviço, fila), com colchetes quando o nome tem ponto
+(`{{[http.route].name}}`, `{{[@messaging.destination.name].name}}`); `{{first_triggered_at}}` e
+`{{triggered_duration_sec}}`, para duração; três links contextuais.
 
 **O serviço da mensagem vem do mapa**, nos monitores de um serviço só. Nos que cobrem vários serviços com um
 monitor agrupado por `service` — falhas no fluxo de ordens de serviço, mensagem na DLQ, relay do outbox
@@ -303,7 +304,7 @@ justamente quando a série enfim aparecesse.
 
 ## Lambda notification · Falha de envio de e-mail
 
-**Arquivo**: `terraform/monitors_integrations.tf` · **Prioridade**: P4 · **Dashboard**: Visão Geral
+**Arquivo**: `terraform/monitors_integrations.tf` · **Prioridade**: P4 · **Dashboard**: Mensageria
 
 ```
 logs("service:oficina-mecanica-lambda-notification env:production @oficina.event.name:notification.failed")
@@ -442,7 +443,7 @@ de quem não conhece a chave fica abaixo.
 
 ```
 sum(last_1h):sum:oficina.saga.finished{env:production,service:oficina-mecanica-work-order-service,
-  oficina.saga.outcome:compensated,oficina.saga.type:QUOTE_APPROVAL}.as_count() > 1
+  oficina.saga.outcome:compensated,oficina.saga.type:quote_approval}.as_count() > 1
 ```
 
 | Warning | Critical | Janela | Agrupamento | `require_full_window` |

@@ -16,12 +16,12 @@ resource "datadog_monitor" "mail_send_failed" {
   message = templatestring(local.monitor_message, {
     alert_symptom   = "Falha de envio de e-mail"
     warning_symptom = "Falhas de envio de e-mail subindo"
-    group_suffix    = " — motivo `{{@oficina.notification.failure.reason.name}}`, e-mail `{{@oficina.notification.purpose.name}}`"
+    group_suffix    = " — motivo `{{[@oficina.notification.failure.reason].name}}`, e-mail `{{[@oficina.notification.purpose].name}}`"
     service         = local.lambdas["notification"].service
     environment     = var.env
     unit            = "falhas de envio"
     window          = "15 min"
-    dashboard_url   = local.dashboard_url_overview
+    dashboard_url   = local.dashboard_url_messaging
     logs_url        = local.logs_url_notification_failed
     runbook_url     = "${local.runbook_url}#falha-de-envio-de-e-mail"
   })
@@ -57,7 +57,7 @@ resource "datadog_monitor" "health_degraded" {
   message = templatestring(local.monitor_message, {
     alert_symptom   = "Health check degradado"
     warning_symptom = "Health check degradado"
-    group_suffix    = " — dependência `{{@oficina.dependency.name.name}}`, falha `{{@oficina.health.failure.category.name}}`"
+    group_suffix    = " — dependência `{{[@oficina.dependency.name].name}}`, falha `{{[@oficina.health.failure.category].name}}`"
     service         = each.value.service
     environment     = var.env
     unit            = "ocorrências de degradação"

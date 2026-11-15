@@ -20,7 +20,7 @@ resource "datadog_monitor" "dead_lettered" {
   message = templatestring(local.monitor_message, {
     alert_symptom   = "Mensagem enviada à DLQ"
     warning_symptom = "Mensagem enviada à DLQ"
-    group_suffix    = " — serviço `{{service.name}}`, fila `{{@messaging.destination.name.name}}`, tipo `{{@oficina.messaging.message.type.name}}`"
+    group_suffix    = " — serviço `{{service.name}}`, fila `{{[@messaging.destination.name].name}}`, tipo `{{[@oficina.messaging.message.type].name}}`"
     service         = "{{service.name}}"
     environment     = var.env
     unit            = "mensagens na DLQ"

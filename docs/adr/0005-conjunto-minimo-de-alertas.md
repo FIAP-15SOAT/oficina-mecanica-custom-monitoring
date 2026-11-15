@@ -143,9 +143,10 @@ observados sem editar as consultas.
   [Observabilidade](../observability.md#3-limitações), com a causa de cada uma.
 - **Os monitores sobre eventos de falha não podem ser verificados de ponta a ponta** sem provocar o evento na
   origem: `notification.failed`, `health.degraded`, `messaging.message.dead_lettered`,
-  `messaging.outbox.publish_failed`, `payment.webhook.invalid_signature`, `saga.compensated` e
-  `cache.invalidation_failed` só existem quando a falha acontece. Os nomes foram conferidos nos catálogos dos
-  serviços, e a verificação com a falha provocada é feita com o ambiente no ar.
+  `messaging.outbox.publish_failed`, `payment.webhook.invalid_signature` e `cache.invalidation_failed`, e a
+  métrica `oficina.saga.finished` com `oficina.saga.outcome:compensated`, só existem quando a falha acontece.
+  Os nomes foram conferidos nos catálogos dos serviços, e a verificação com a falha provocada é feita com o
+  ambiente no ar.
 - **Os monitores de erros das Lambdas avaliam em `No Data`, não em `OK`**, na operação normal, porque
   `aws.lambda.enhanced.errors` só passa a existir na primeira falha. Não notificam, e é o comportamento
   desejado.

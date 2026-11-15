@@ -18,8 +18,7 @@ locals {
   service_k8s_scope = { for k, v in local.services : k => "kube_namespace:${k},kube_deployment:${v.kube_deployment}" }
   lambda_scope      = { for k, v in local.lambdas : k => "functionname:${v.function_name}" }
 
-  # O destino recusa `AND`/`OR` misturados com `,` no mesmo escopo. Onde a
-  # consulta precisa de `OR`, a vírgula tem de virar `AND` na expressão inteira.
+  # The destination rejects `,` mixed with `AND`/`OR` in one scope, so this one is `AND`-joined.
   services_scope = "env:${var.env} AND (${join(" OR ", [for v in values(local.services) : "service:${v.service}"])})"
 
   kube_namespaces = toset(concat(keys(local.services), ["platform"]))
@@ -35,15 +34,13 @@ locals {
   service_tags = { for k, v in local.services : k => concat(local.common_tags, ["service:${v.service}"]) }
   lambda_tags  = { for k, v in local.lambdas : k => concat(local.common_tags, ["service:${v.service}"]) }
 
-  # Dashboard só aceita as chaves `team` e `ai` -- qualquer outra volta
-  # 400 "Invalid tag format". A restrição é do destino e vale só para
-  # dashboards: monitor e teste sintético aceitam tag arbitrária.
+  # Dashboards accept only the `team` and `ai` tag keys; any other key returns
+  # 400 "Invalid tag format". Monitors and synthetic tests accept any tag.
   dashboard_tags = ["team:${var.project_name}"]
 
-  # `datadog_dashboard.url` devolve CAMINHO (`/dashboard/<id>/<slug>`), não
-  # endereço absoluto. Num resumo de execução do GitHub ou num e-mail de
-  # alerta, esse caminho resolve contra o domínio errado e o link chega
-  # quebrado.
+  # `datadog_dashboard.url` returns a PATH (`/dashboard/<id>/<slug>`), not an
+  # absolute URL. In a GitHub run summary or an alert e-mail the path resolves
+  # against the wrong domain and the link arrives broken.
   datadog_app_base = trimsuffix(var.datadog_app_url, "/")
 
   dashboard_url_overview    = "${local.datadog_app_base}${datadog_dashboard.overview.url}"

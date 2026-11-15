@@ -4,11 +4,12 @@ locals {
 
 # PAYMENT sagas end compensated when the charge is rejected, expires or is
 # cancelled, which are normal payment outcomes, so only QUOTE_APPROVAL counts.
+# Metric tag values arrive lowercased, unlike the log attribute in the link above.
 resource "datadog_monitor" "saga_compensations" {
   name = "[Oficina Mecânica] Sagas · Compensações da aprovação de orçamento"
   type = "query alert"
 
-  query = "sum(last_1h):sum:oficina.saga.finished{${local.service_scope["work-order"]},oficina.saga.outcome:compensated,oficina.saga.type:QUOTE_APPROVAL}.as_count() > ${var.saga_compensation_critical_count}"
+  query = "sum(last_1h):sum:oficina.saga.finished{${local.service_scope["work-order"]},oficina.saga.outcome:compensated,oficina.saga.type:quote_approval}.as_count() > ${var.saga_compensation_critical_count}"
 
   monitor_thresholds {
     critical = var.saga_compensation_critical_count

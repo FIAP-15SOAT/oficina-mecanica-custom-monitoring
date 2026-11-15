@@ -1,10 +1,10 @@
-# Memória do pod próxima do limite.
+# Pod memory close to the limit.
 #
-# `working_set` sobre `limits`, e não `usage`, porque `working_set` é o que o
-# encerramento por falta de memória observa. Não há monitor de CPU: com
-# autoescalonamento mirando 70% de CPU, "CPU alta" é o mecanismo funcionando.
-# O sinal acionável seria estrangulamento sustentado, que fica no dashboard e
-# só vira monitor se a latência da API provar correlação.
+# `working_set` over `limits`, not `usage`, because `working_set` is what the
+# out-of-memory kill watches. There is no CPU monitor: with autoscaling aimed
+# at 70% CPU, "high CPU" is the mechanism working. The actionable signal would
+# be sustained throttling, which stays on the dashboard and becomes a monitor
+# only if service latency proves a correlation.
 resource "datadog_monitor" "pod_memory" {
   for_each = local.services
 
@@ -43,12 +43,13 @@ resource "datadog_monitor" "pod_memory" {
   tags = local.service_tags[each.key]
 }
 
-# `kubernetes.containers.restarts` é contador cumulativo: interessa a variação
-# na janela, não o valor absoluto. `diff()` devolve o incremento entre pontos
-# consecutivos, e `max(last_10m)` dele responde "houve reinício na janela?".
+# `kubernetes.containers.restarts` is a cumulative counter: what matters is the
+# change in the window, not the absolute value. `diff()` returns the increment
+# between consecutive points, and its `max(last_10m)` answers "was there a
+# restart in the window?".
 #
-# Não troque por `change()`: essa família não dispara neste cenário, mesmo com
-# a variação do contador sendo positiva.
+# Do not swap it for `change()`: that family does not fire in this case, even
+# with a positive counter change.
 resource "datadog_monitor" "pod_restarts" {
   for_each = local.services
 

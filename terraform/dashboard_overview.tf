@@ -249,17 +249,17 @@ resource "datadog_dashboard" "overview" {
 
       widget {
         query_value_definition {
-          title      = "Pods dos serviços emitindo métrica"
+          title      = "Serviços com pods emitindo métrica"
           live_span  = "4h"
           autoscale  = false
           precision  = 0
           text_align = "center"
 
           request {
-            q          = "count_nonzero(avg:kubernetes.memory.working_set{${local.overview_k8s_scope}} by {kube_namespace,pod_name})"
+            q          = "count_nonzero(avg:kubernetes.memory.working_set{${local.overview_k8s_scope}} by {kube_namespace})"
             aggregator = "last"
 
-            # Each service runs at least one pod, so fewer pods than services means one is down.
+            # One series per namespace with a pod emitting, so fewer than the services means one is down.
             conditional_formats {
               comparator = "<"
               value      = length(local.services)

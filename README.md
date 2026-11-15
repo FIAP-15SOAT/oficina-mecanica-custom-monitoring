@@ -29,8 +29,8 @@ as Lambdas exportam métricas *enhanced* e logs pela extensão Datadog. Os servi
 entre si por HTTP interno e por filas SQS, e uma aprovação de orçamento ou um pagamento
 atravessa vários deles numa Saga, uma transação distribuída conduzida pelo work-order.
 
-Este repositório consome esses sinais e declara dez dashboards, 33 monitores no total, um
-teste sintético por serviço e a configuração de tags da métrica de latência. Os logs
+Este repositório consome esses sinais e declara os dashboards, os monitores, um teste
+sintético por serviço e a configuração de tags da métrica de latência. Os logs
 instrumentados dos serviços incluem `trace_id` e `span_id` quando emitidos com um span
 ativo; `request.id` identifica a requisição. Logs de bootstrap fora de spans e logs dos
 componentes de plataforma não têm esse mesmo contrato de correlação.
@@ -207,9 +207,6 @@ do gateway** — o endereço público muda a cada reprovisionamento. O ritual co
 
 ## 📦 Estado
 
-- Quarenta e quatro recursos declarados: 1 configuração de tag de métrica, 10 dashboards,
-  29 monitores e 4 testes sintéticos — cada teste cria o seu próprio monitor no destino, o
-  que dá os 33 monitores da conta.
 - Consultas de dashboards e alertas ficam declaradas no Terraform, junto dos filtros,
   agrupamentos e limiares.
 - A esteira executa `fmt`, `init` e `validate` e exige a presença da chave de aplicação.

@@ -1,6 +1,6 @@
-# A rota de saúde é excluida da instrumentação na entrada: não há métrica,
-# trace nem log de sucesso para ela. Verificação externa é a única forma de
-# verificar se a rota pública está de pé".
+# The health route is excluded from inbound instrumentation: it leaves no
+# metric, trace or success log. An external check is the only way to know
+# the public route is up.
 resource "datadog_synthetics_test" "service_health" {
   for_each = local.services
 

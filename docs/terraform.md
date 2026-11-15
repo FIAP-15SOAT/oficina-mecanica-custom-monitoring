@@ -146,7 +146,7 @@ arquivo versionado ([ADR 0004](adr/0004-state-no-s3-compartilhado.md)). O mesmo 
 `use_lockfile` para a trava nativa por arquivo de lock, que faz a segunda execução simultânea **falhar** em vez
 de corromper o state.
 
-**O acoplamento é deliberado e está declarado**: sem credenciais válidas do laboratório AWS, nem o `plan` local
+**O acoplamento é deliberado e está declarado**: sem credenciais AWS válidas, nem o `plan` local
 nem a entrega funcionam — mesmo que a mudança seja só de dashboard, que é um recurso puramente Datadog. O
 raciocínio e a alternativa recusada estão em [ADR 0004](adr/0004-state-no-s3-compartilhado.md).
 
@@ -178,7 +178,7 @@ que a entrega deste repositório faz parte do ritual de subida, **depois** da en
 
 ## Variáveis
 
-Três grupos, todos em `variables.tf`:
+Sete grupos, todos em `variables.tf`:
 
 | Grupo | Variáveis | Onde o valor vive |
 | --- | --- | --- |
@@ -235,10 +235,6 @@ inequívoca. **O valor não é versionado**: este repositório é público e end
 | `common_tags`, `service_tags`, `lambda_tags`, `dashboard_tags` | tagging uniforme |
 | `datadog_app_base`, `dashboard_url_*`, `logs_url_*`, `runbook_url` | links contextuais nas mensagens de alerta e no resumo da entrega |
 | `alert_footer`, `monitor_message`, `synthetic_message` | as mensagens dos monitores e dos testes sintéticos, por estado |
-
-Um local usado por um só arquivo fica no topo desse arquivo, e não em `locals.tf`: o escopo do fluxo de
-ordens de serviço em `monitors_work_orders.tf`, o de namespaces em `dashboard_kubernetes.tf` e as URLs de log
-dos monitores da solução distribuída.
 
 **`datadog_dashboard.url` devolve caminho, não endereço absoluto** (`/dashboard/<id>/<slug>`). Concatenado com
 `local.datadog_app_base`, vira link que funciona fora do Datadog — no resumo da execução do CD e no corpo do
