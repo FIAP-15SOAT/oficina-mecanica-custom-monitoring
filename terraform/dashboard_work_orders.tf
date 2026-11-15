@@ -280,7 +280,7 @@ resource "datadog_dashboard" "work_orders" {
 
       widget {
         toplist_definition {
-          title     = "Decisões de orçamento — aprovados contra recusados"
+          title     = "Decisões de orçamento no billing — aprovados contra recusados"
           live_span = "1w"
 
           request {
@@ -299,7 +299,7 @@ resource "datadog_dashboard" "work_orders" {
                 }
 
                 search {
-                  query = "service:$service env:$env @oficina.event.name:(quote.approved OR quote.rejected)"
+                  query = "service:${local.services["billing"].service} env:$env @oficina.event.name:(quote.approved OR quote.rejected)"
                 }
 
                 group_by {
