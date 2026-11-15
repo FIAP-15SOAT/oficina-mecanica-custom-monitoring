@@ -3,9 +3,9 @@ output "dashboard_overview_url" {
   value       = local.dashboard_url_overview
 }
 
-output "dashboard_api_url" {
-  description = "Endereço do dashboard de API."
-  value       = local.dashboard_url_api
+output "dashboard_service_urls" {
+  description = "Endereço do dashboard de cada serviço, por contexto."
+  value       = local.dashboard_url_service
 }
 
 output "dashboard_work_orders_url" {
@@ -18,27 +18,47 @@ output "dashboard_kubernetes_url" {
   value       = local.dashboard_url_kubernetes
 }
 
+output "dashboard_sagas_url" {
+  description = "Endereço do dashboard de Sagas."
+  value       = local.dashboard_url_sagas
+}
+
+output "dashboard_payments_url" {
+  description = "Endereço do dashboard de Pagamentos."
+  value       = local.dashboard_url_payments
+}
+
+output "dashboard_messaging_url" {
+  description = "Endereço do dashboard de Mensageria."
+  value       = local.dashboard_url_messaging
+}
+
 output "monitor_ids" {
-  description = "Identificadores dos nove monitores."
+  description = "Identificadores dos monitores: mapas por serviço ou por Lambda e os monitores únicos."
   value = {
-    disponibilidade_externa = datadog_synthetics_test.api_health.monitor_id
-    api_5xx                 = datadog_monitor.api_5xx.id
-    api_latencia_p95        = datadog_monitor.api_latency_p95.id
+    disponibilidade_externa = { for k, t in datadog_synthetics_test.service_health : k => t.monitor_id }
+    servico_5xx             = { for k, m in datadog_monitor.service_5xx : k => m.id }
+    servico_latencia_p95    = { for k, m in datadog_monitor.service_latency_p95 : k => m.id }
+    pod_memoria             = { for k, m in datadog_monitor.pod_memory : k => m.id }
+    pod_reinicios           = { for k, m in datadog_monitor.pod_restarts : k => m.id }
+    health_check_degradado  = { for k, m in datadog_monitor.health_degraded : k => m.id }
+    lambda_erros            = { for k, m in datadog_monitor.lambda_errors : k => m.id }
     ordens_de_servico       = datadog_monitor.work_order_failures.id
-    pod_memoria             = datadog_monitor.pod_memory.id
-    pod_reinicios           = datadog_monitor.pod_restarts.id
-    lambda_erros            = datadog_monitor.lambda_errors.id
     email_falha_envio       = datadog_monitor.mail_send_failed.id
-    dependencia_degradada   = datadog_monitor.dependency_degraded.id
+    mensagem_na_dlq         = datadog_monitor.dead_lettered.id
+    relay_outbox_parado     = datadog_monitor.outbox_publish_failed.id
+    webhook_assinatura      = datadog_monitor.webhook_invalid_signature.id
+    compensacoes_saga       = datadog_monitor.saga_compensations.id
+    cache_falha_limpeza     = datadog_monitor.cache_invalidation_failed.id
   }
 }
 
-output "synthetic_test_id" {
-  description = "Identificador publico do teste sintetico da rota de saude."
-  value       = datadog_synthetics_test.api_health.id
+output "synthetic_test_ids" {
+  description = "Identificador público do teste sintético da rota de saúde de cada serviço."
+  value       = { for k, t in datadog_synthetics_test.service_health : k => t.id }
 }
 
-output "synthetic_test_status" {
-  description = "Estado do teste sintetico: `live` com o laboratorio no ar, `paused` fora dele."
-  value       = datadog_synthetics_test.api_health.status
+output "synthetic_test_statuses" {
+  description = "Estado de cada teste sintético: `live` com o laboratório no ar, `paused` fora dele."
+  value       = { for k, t in datadog_synthetics_test.service_health : k => t.status }
 }

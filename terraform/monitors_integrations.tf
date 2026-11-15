@@ -1,24 +1,29 @@
+locals {
+  logs_url_notification_failed = "${var.datadog_app_url}logs?query=${urlencode("service:${local.lambdas["notification"].service} env:${var.env} @oficina.event.name:notification.failed")}"
+}
+
 resource "datadog_monitor" "mail_send_failed" {
-  name = "[Oficina Mecânica] Integrações · Falha de envio de e-mail"
+  name = "[Oficina Mecânica] Lambda notification · Falha de envio de e-mail"
   type = "log alert"
 
-  query = "logs(\"${local.log_scope} @oficina.event.name:mail.send.failed\").index(\"*\").rollup(\"count\").by(\"@oficina.mail.error.category\").last(\"15m\") > ${var.mail_failure_critical_count}"
+  query = "logs(\"service:${local.lambdas["notification"].service} env:${var.env} @oficina.event.name:notification.failed\").index(\"*\").rollup(\"count\").by(\"@oficina.notification.failure.reason,@oficina.notification.purpose\").last(\"15m\") > ${var.notification_failure_critical_count}"
 
   monitor_thresholds {
-    warning  = var.mail_failure_warning_count
-    critical = var.mail_failure_critical_count
+    warning  = var.notification_failure_warning_count
+    critical = var.notification_failure_critical_count
   }
 
   message = templatestring(local.monitor_message, {
     alert_symptom   = "Falha de envio de e-mail"
     warning_symptom = "Falhas de envio de e-mail subindo"
-    group_suffix    = " — categoria `{{@oficina.mail.error.category.name}}`"
-    service         = var.api_service
+    group_suffix    = " — motivo `{{[@oficina.notification.failure.reason].name}}`, e-mail `{{[@oficina.notification.purpose].name}}`"
+    service         = local.lambdas["notification"].service
     environment     = var.env
     unit            = "falhas de envio"
     window          = "15 min"
-    dashboard_url   = local.dashboard_url_api
-    logs_url        = local.logs_url_mail
+    dashboard_url   = local.dashboard_url_messaging
+    logs_url        = local.logs_url_notification_failed
+    runbook_url     = "${local.runbook_url}#falha-de-envio-de-e-mail"
   })
 
   new_group_delay     = 300
@@ -31,33 +36,35 @@ resource "datadog_monitor" "mail_send_failed" {
   enable_logs_sample = true
   priority           = "4"
 
-  tags = local.api_tags
+  tags = local.lambda_tags["notification"]
 }
 
-# O evento `health.degraded` é emitido pela própria verificação de saúde interna
-# quando uma dependência responde fora do esperado. É o único sinal que nomeia
-# **qual** dependência falhou -- a rota de saúde é excluída da instrumentação na
-# entrada, então não há métrica nem trace dela.
-resource "datadog_monitor" "dependency_degraded" {
-  name = "[Oficina Mecânica] Dependência · Health check degradado"
+# `health.degraded` is logged by the readiness check itself, with the dependency
+# name and the failure type. The health route is excluded from instrumentation,
+# so no metric or trace says which dependency failed.
+resource "datadog_monitor" "health_degraded" {
+  for_each = local.services
+
+  name = "[Oficina Mecânica] Serviço ${each.key} · Health check degradado"
   type = "log alert"
 
-  query = "logs(\"${local.log_scope} @oficina.event.name:health.degraded\").index(\"*\").rollup(\"count\").by(\"@oficina.health.failure.category\").last(\"10m\") > ${var.health_degraded_critical_count}"
+  query = "logs(\"${local.service_log_scope[each.key]} @oficina.event.name:health.degraded\").index(\"*\").rollup(\"count\").by(\"@oficina.dependency.name,@oficina.health.failure.category\").last(\"10m\") > ${var.health_degraded_critical_count}"
 
   monitor_thresholds {
     critical = var.health_degraded_critical_count
   }
 
   message = templatestring(local.monitor_message, {
-    alert_symptom   = "Dependência degradada"
-    warning_symptom = "Dependência degradada"
-    group_suffix    = " — categoria `{{@oficina.health.failure.category.name}}`"
-    service         = var.api_service
+    alert_symptom   = "Health check degradado"
+    warning_symptom = "Health check degradado"
+    group_suffix    = " — dependência `{{[@oficina.dependency.name].name}}`, falha `{{[@oficina.health.failure.category].name}}`"
+    service         = each.value.service
     environment     = var.env
     unit            = "ocorrências de degradação"
     window          = "10 min"
-    dashboard_url   = local.dashboard_url_api
-    logs_url        = local.logs_url_health
+    dashboard_url   = local.dashboard_url_service[each.key]
+    logs_url        = local.logs_url_health[each.key]
+    runbook_url     = "${local.runbook_url}#health-check-degradado"
   })
 
   new_group_delay     = 300
@@ -70,5 +77,5 @@ resource "datadog_monitor" "dependency_degraded" {
   enable_logs_sample = true
   priority           = "3"
 
-  tags = local.api_tags
+  tags = local.service_tags[each.key]
 }

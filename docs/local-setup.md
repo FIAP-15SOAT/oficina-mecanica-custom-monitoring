@@ -70,10 +70,10 @@ curl -H "DD-API-KEY: $TF_VAR_datadog_api_key" \
 ```
 
 > **Use os seus próprios endereços em `TF_VAR_alert_emails` ao testar.** Um `plan` não notifica ninguém, mas um
-> `apply` acidental reconfiguraria os nove monitores com os destinatários que você exportou.
+> `apply` acidental reconfiguraria todos os monitores com os destinatários que você exportou.
 
-`terraform.tfvars` já está versionado com os valores não sensíveis — identidade, chave e região do state remoto e os doze
-limiares. Não é preciso copiar nada; `terraform.tfvars.example` existe como referência do formato.
+`terraform.tfvars` já está versionado com os valores não sensíveis — identidade, chave e região do state remoto e os
+limiares dos monitores. Não é preciso copiar nada; `terraform.tfvars.example` existe como referência do formato.
 
 ### 3. Verificação estrutural, sem credencial nenhuma
 
@@ -169,7 +169,7 @@ devolve `400 input_validation_error`. Omita-o.
 | --- | --- | --- |
 | `explicit deny ... voc-cancel-cred` | Sessão do laboratório expirada | Renovar as credenciais no AWS Academy |
 | `Backend initialization required` | Backend ainda não configurado nesta cópia | `terraform init -reconfigure -backend-config="bucket=$TF_STATE_BUCKET"` |
-| `This object does not have an attribute named "api_endpoint"` | Gateway destruído: state vazio | Subir o gateway antes, ou aceitar que o teste sintético não pode ser planejado |
+| `This object does not have an attribute named "api_endpoint"` | Gateway destruído: state vazio | Subir o gateway antes, ou aceitar que os testes sintéticos não podem ser planejados |
 | `missing_aggregation :: AGG_AVG/AGG_P95` | Configuração de tags da métrica ainda não aplicada | Esperado antes do primeiro `apply` |
 | `Error acquiring the state lock` | A esteira está aplicando | Aguardar |
 | `terraform console` reclama do backend | `console` também precisa do backend inicializado | `terraform init -reconfigure -backend-config="bucket=$TF_STATE_BUCKET"` antes |

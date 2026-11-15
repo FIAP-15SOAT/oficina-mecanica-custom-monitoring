@@ -1,23 +1,26 @@
 resource "datadog_monitor" "lambda_errors" {
-  name = "[Oficina Mecânica] Lambda customer-auth · Erros de execução"
+  for_each = local.lambdas
+
+  name = "[Oficina Mecânica] Lambda ${each.key} · Erros de execução"
   type = "query alert"
 
-  query = "sum(last_10m):sum:aws.lambda.enhanced.errors{${local.lambda_scope}}.as_count() > ${var.lambda_error_critical_count}"
+  query = "sum(last_10m):sum:aws.lambda.enhanced.errors{${local.lambda_scope[each.key]}}.as_count() > ${var.lambda_error_critical_count}"
 
   monitor_thresholds {
     critical = var.lambda_error_critical_count
   }
 
   message = templatestring(local.monitor_message, {
-    alert_symptom   = "Erro de execução na Lambda de autenticação"
-    warning_symptom = "Erro de execução na Lambda de autenticação"
-    group_suffix    = " — `${var.lambda_function_name}`"
-    service         = "oficina-mecanica-lambda-customer-auth"
+    alert_symptom   = "Erro de execução na Lambda ${each.key}"
+    warning_symptom = "Erro de execução na Lambda ${each.key}"
+    group_suffix    = " — `${each.value.function_name}`"
+    service         = each.value.service
     environment     = var.env
     unit            = "erros de plataforma"
     window          = "10 min"
     dashboard_url   = local.dashboard_url_overview
-    logs_url        = local.logs_url_lambda
+    logs_url        = local.logs_url_lambda[each.key]
+    runbook_url     = "${local.runbook_url}#erros-de-execução-da-lambda"
   })
 
   require_full_window = false
@@ -28,5 +31,5 @@ resource "datadog_monitor" "lambda_errors" {
   include_tags      = true
   priority          = "2"
 
-  tags = local.lambda_tags
+  tags = local.lambda_tags[each.key]
 }

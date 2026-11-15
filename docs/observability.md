@@ -4,7 +4,10 @@ Documento âncora deste repositório. Inventaria **o que a solução realmente e
 **o que ela não emite** — porque metade das perguntas de revisão sobre um dashboard é "por que isto não está
 aqui?", e a resposta precisa estar escrita em um só lugar.
 
-Os sinais são definidos pelo código da API, pelos manifests de coleta e pelo Terraform dos componentes.
+Os sinais são definidos pelo código dos quatro serviços — `work-order` (ordens de serviço, clientes e
+veículos), `identity` (usuários e login), `billing` (orçamentos e cobranças) e `inventory` (serviços, peças e
+estoque) — e das duas funções Lambda, a `customer-auth` (login do cliente) e a `notification` (envio de
+e-mail), pelos manifests de coleta e pelo Terraform dos componentes.
 Este documento descreve seus contratos e a configuração consumida pelo monitoramento no site `us5`.
 
 ---
@@ -13,13 +16,14 @@ Este documento descreve seus contratos e a configuração consumida pelo monitor
 
 | Origem | Caminho | O que chega |
 | --- | --- | --- |
-| API (NestJS, pods no EKS) | SDK OpenTelemetry → exportador OTLP → Datadog Agent 7.83.1 (DaemonSet) | métricas e traces por OTLP; logs pelo stdout dos contêineres |
+| Serviços (NestJS, pods no EKS, um namespace por serviço) | SDK OpenTelemetry → exportador OTLP (o protocolo do OpenTelemetry) → Datadog Agent 7.83.1 (DaemonSet no namespace `platform`) | métricas e traces por OTLP; logs pela saída padrão (stdout) dos contêineres |
 | Lambda `customer-auth` | Extensão Datadog (camada Lambda) | métricas *enhanced* e logs; **sem traces** |
+| Lambda `notification` | Extensão Datadog (camada Lambda) | métricas *enhanced*, logs e um span por mensagem, enviado à extensão por OTLP |
 | Cluster Kubernetes | Datadog Agent, coleta do *kubelet* | métricas de contêiner, pod e nó |
-| Rota pública `/api/health/ready` | Teste sintético deste repositório | disponibilidade externa |
+| Rotas públicas `/health/<contexto>`, uma por serviço | Testes sintéticos deste repositório | disponibilidade externa |
 
 Este repositório não coleta nada. Ele **consome** o que já chega, e é dono de tudo que lê: dashboards,
-monitores, teste sintético e configuração de métrica.
+monitores, testes sintéticos e configuração de métrica.
 
 ---
 
@@ -27,31 +31,47 @@ monitores, teste sintético e configuração de métrica.
 
 ### 2.1 Métricas de negócio
 
-Emitidas pela API a partir de `business-metric.catalog.ts`. Temporalidade **delta**, intervalo de 60 s.
+Emitidas pelos serviços a partir do `business-metric.catalog.ts` de cada um, salvo onde a tabela indica
+outro arquivo. Todas levam `env`, `service` e `version`. Temporalidade **delta**, intervalo de 60 s.
 
-| Métrica | Tipo | Unidade | Tags | Observação |
-| --- | --- | --- | --- | --- |
-| `oficina.work_order.created` | contador | `{work_order}` | `env`, `service`, `version` | conta nascimento de OS |
-| `oficina.work_order.status.duration` | histograma → *distribution* | s | + `oficina.work_order.status` | permanência em cada status |
-| `oficina.work_order.diagnosis_to_completion.duration` | histograma → *distribution* | s | `env`, `service`, `version` | — |
-| `oficina.work_order.lead_time.duration` | histograma → *distribution* | s | `env`, `service`, `version` | — |
+| Métrica | Serviço | Tipo | Unidade | Tags além de `env`, `service`, `version` | Observação |
+| --- | --- | --- | --- | --- | --- |
+| `oficina.work_order.created` | work-order | contador | `{work_order}` | — | conta nascimento de OS |
+| `oficina.work_order.status.duration` | work-order | histograma → *distribution* | s | `oficina.work_order.status` | permanência em cada status |
+| `oficina.work_order.diagnosis_to_completion.duration` | work-order | histograma → *distribution* | s | — | — |
+| `oficina.work_order.lead_time.duration` | work-order | histograma → *distribution* | s | — | — |
+| `oficina.saga.started` | work-order | contador | `{saga}` | `oficina.saga.type` | Saga iniciada: `QUOTE_APPROVAL` (aprovação de orçamento) ou `PAYMENT` (cobrança) |
+| `oficina.saga.finished` | work-order | contador | `{saga}` | `oficina.saga.type`, `oficina.saga.outcome` | `completed` ou `compensated` (desfeita) |
+| `oficina.saga.duration` | work-order | histograma → *distribution* | s | `oficina.saga.type`, `oficina.saga.outcome` | do início ao fim da Saga |
+| `oficina.payment.requested` | billing | contador | — | — | cobrança criada no Mercado Pago |
+| `oficina.payment.resolved` | billing | contador | — | `oficina.payment.status` | `APPROVED`, `REJECTED`, `EXPIRED` ou `CANCELLED` |
+| `oficina.payment.webhook.received` | billing (`mercado-pago-signature.guard.ts`) | contador | `{notification}` | `outcome` | `valid` ou `invalid_signature` |
+| `oficina.messaging.consumed` | work-order, billing, inventory (`sqs-consumer.service.ts`) | contador | `{message}` | `messaging.destination.name`, `outcome` | fila consumida e resultado: `success`, `retry` ou `dead_lettered` |
 
-**Valores de `oficina.work_order.status` observados**: `received`, `in_diagnosis`, `awaiting_approval`,
-`approved`, `in_progress`, `completed` — **em minúsculas**. Ver a limitação L12.
+O identity não consome fila e não emite `oficina.messaging.consumed`. A tabela de cada nome com o arquivo de
+origem está em [Convenções](conventions.md#sinais-da-solução-distribuída).
 
-Semântica herdada do ADR 0005 da API, e que muda a leitura dos números:
+**Valores possíveis de `oficina.work_order.status`**: `received`, `in_diagnosis`, `awaiting_approval`,
+`rejected`, `approved`, `awaiting_payment`, `in_progress`, `completed` — **em minúsculas**. Ver a limitação
+L12.
+
+Semântica herdada do ADR 0005 do work-order, e que muda a leitura dos números:
 
 - Permanência ancora na **última** entrada no status; totais ancoram na **primeira**.
-- Status terminais (`DELIVERED`, `CANCELLED`) **não emitem** permanência, o que limita a quebra a sete valores.
+- Status terminais (`DELIVERED`, `CANCELLED`) **não emitem** permanência, o que limita a quebra aos oito
+  valores acima.
 - A emissão é *best-effort* pós-commit: **subcontagem silenciosa é possível**. Estes números são indicativos,
   não contábeis.
 - Temporalidade delta com intervalo de 60 s: uma exportação que falha perde a janela inteira.
 
-### 2.2 Métricas de instrumentação da API
+### 2.2 Métricas de instrumentação dos serviços
+
+Iguais nos quatro serviços, porque vêm do mesmo SDK e das mesmas instrumentações do OpenTelemetry.
 
 | Métrica | Tipo | Unidade | Dimensões emitidas |
 | --- | --- | --- | --- |
 | `http.server.request.duration` | *distribution* | **s** | `http.request.method`, `url.scheme`, `network.protocol.version`, `http.route`, `http.response.status_code`, `error.type` |
+| `http.client.request.duration` | *distribution* | **s** | `http.request.method`, `server.address`, `server.port`, `http.response.status_code`, `error.type` |
 | `db.client.operation.duration` | *distribution* | s | `db.system.name`, `db.namespace`, `db.operation.name`, `server.address`, `server.port`, `error.type` |
 | `db.client.connection.count` / `.max` / `.pending_requests` | gauge | conexões | `db.client.connection.pool.name`, `db.client.connection.state` (`used`, `idle`) |
 | `nodejs.eventloop.delay.{min,max,mean,stddev,p50,p90,p99}`, `.utilization`, `.time` | gauge | s / razão | `nodejs.eventloop.state` |
@@ -60,6 +80,14 @@ Semântica herdada do ADR 0005 da API, e que muda a leitura dos números:
 **`http.route` e `http.response.status_code` são a grafia correta** — `http_route`, `http_status_code` e
 `status_code` não existem. Rotas preservam `/` e `:` (`/api/work-orders/:id`), e o filtro por prefixo
 (`http.route:/api/work-orders*`) funciona.
+
+`http.client.request.duration` mede as chamadas HTTP que um serviço faz: a outro serviço, pela rota interna
+`/internal`, ou ao Mercado Pago (`server.address:api.mercadopago.com`), no billing. Mede também as do SDK da
+AWS à fila SQS e ao tópico SNS (`sqs.us-east-1.amazonaws.com` e `sns.us-east-1.amazonaws.com`): a
+instrumentação HTTP grava a métrica de toda requisição de saída, mesmo quando não grava o span, e a leitura da
+fila espera até 20 s por mensagem; por isso o dashboard de serviço exclui esses dois hosts. **Não recebe
+configuração de tags**: os dashboards a consultam por média, máximo e contagem, que não exigem percentis, e
+nenhum monitor depende dela.
 
 `error.type` é preenchido **exclusivamente** para respostas 5xx ou erro de transporte. Mesmo assim, nenhuma
 consulta o usa: ele foi descartado do índice pela configuração de tags da seção 5, e
@@ -78,14 +106,16 @@ Conforme o mapeamento oficial OTel → Datadog, aplicável a métricas:
 
 | Atributo OTel | Tag Datadog | Confirmado |
 | --- | --- | --- |
-| `service.name` | `service` | `oficina-mecanica-work-order-service` |
+| `service.name` | `service` | `oficina-mecanica-work-order-service`, `oficina-mecanica-identity-service`, `oficina-mecanica-billing-service`, `oficina-mecanica-inventory-service` |
 | `deployment.environment.name` | `env` | `production` |
 | `service.version` | `version` | o SHA do commit |
 
 ### 2.4 Kubernetes
 
-Coletadas do *kubelet*, com `kube_deployment:work-order-service`, `pod_name`, `kube_namespace:work-order`,
-`kube_container_name:api` e `kube_cluster_name:oficina-mecanica`.
+Coletadas do *kubelet*, com `kube_namespace`, `kube_deployment`, `pod_name`, `kube_container_name` e
+`kube_cluster_name:oficina-mecanica`. Cada serviço roda no Deployment `<contexto>-service` do namespace
+`<contexto>` (por exemplo, `kube_deployment:billing-service` em `kube_namespace:billing`); o Datadog Agent e o
+MailHog, o servidor de e-mail de teste, rodam no namespace `platform`.
 
 `kubernetes.cpu.usage.total` · `kubernetes.cpu.requests` · `kubernetes.cpu.limits` ·
 `kubernetes.cpu.cfs.periods` · `kubernetes.cpu.cfs.throttled.periods` · `kubernetes.memory.working_set` ·
@@ -97,8 +127,8 @@ Coletadas do *kubelet*, com `kube_deployment:work-order-service`, `pod_name`, `k
 
 ### 2.5 Lambda
 
-Métricas *enhanced* da extensão, com `functionname:lbd-oficina-mecanica-customer-auth`, `region`,
-`memorysize`, `runtime` e **`cold_start:true|false`**.
+Métricas *enhanced* da extensão, com `functionname` (`lbd-oficina-mecanica-customer-auth` ou
+`lbd-oficina-mecanica-notification`), `region`, `memorysize`, `runtime` e **`cold_start:true|false`**.
 
 `aws.lambda.enhanced.invocations` · `.duration` · `.billed_duration` · `.init_duration` · `.max_memory_used` ·
 `.estimated_cost` · e as três de falha: `.errors`, `.timeouts`, `.out_of_memory`.
@@ -108,16 +138,17 @@ Ver a limitação L14.
 
 ### 2.6 Logs
 
-`service:oficina-mecanica-work-order-service`, `env:production`, `source:ecr-oficina-mecanica-app-repo`,
-`cluster_name:oficina-mecanica`, `pod_name`, `container_name:api`, `status` derivado de `level`.
+Nos serviços: `service:<serviço>`, `env:production`, `source` (o repositório da imagem),
+`cluster_name:oficina-mecanica`, `pod_name`, `container_name`, `status` derivado de `level`. Nas Lambdas:
+`service:oficina-mecanica-lambda-customer-auth` ou `service:oficina-mecanica-lambda-notification`.
 
-O logger instrumentado da API inclui `trace_id`, `span_id` e `trace_flags` quando existe contexto de span
+O logger instrumentado dos serviços inclui `trace_id`, `span_id` e `trace_flags` quando existe contexto de span
 ativo. O access log também contém `request.id`. Logs de inicialização de módulos e dependências do NestJS,
 bootstrap e encerramento fora de spans não recebem identificadores sintéticos de trace.
 
 O contrato é implementado em `trace-correlation.ts` e no `mixin` de `logging.module.ts`, com os campos
 permitidos pelo registro do logger. Logs de `metrics-server` e do Job `oficina-mecanica-db-migrate` pertencem
-a outros produtores e não são evidência de falha de correlação do logger da API.
+a outros produtores e não são evidência de falha de correlação do logger dos serviços.
 
 O [pré-processamento de JSON do Datadog](https://docs.datadoghq.com/logs/log_configuration/pipelines/)
 reconhece `trace_id` e `span_id` como atributos de correlação; a ausência deles entre atributos customizados
@@ -126,16 +157,17 @@ depende de o trace correspondente estar disponível no destino.
 
 No Log Explorer e na API de busca, esses identificadores são campos reservados: use `trace_id:*` e
 `span_id:*`, sem o prefixo `@`. `@request.id:*` continua sendo uma busca por atributo customizado.
-Para investigar correlação, filtre o serviço da API e diferencie access logs e eventos com span ativo
+Para investigar correlação, filtre o serviço e diferencie access logs e eventos com span ativo
 dos logs de ciclo de vida e das falhas de healthcheck, cujas requests são excluídas da instrumentação.
 
 Facetas confirmadas: `@http.route`, `@http.response.status_code`, `@http.request.method`, `@error.type`,
 `@oficina.error.message`, `@oficina.http.server.request.duration_ms`, `@code.function.name`,
 `@service.version`, `@request.id`, `@user.id`, `@user.roles`, `@oficina.event.name`,
-`@oficina.work_order.status.current`.
+`@oficina.work_order.status.current`. As facetas dos eventos da solução distribuída — Saga, fila, outbox,
+webhook, cache e e-mail — estão em [Convenções](conventions.md#dimensões-de-consulta).
 
-Os catálogos da API definem eventos de ciclo de vida, autenticação, estoque, orçamento, ordens de serviço,
-envio de e-mail e dependências. Dashboards e monitores filtram `@oficina.event.name` conforme a pergunta
+Os catálogos de cada serviço definem eventos de ciclo de vida, autenticação, estoque, orçamento, ordens de
+serviço, Saga, cobrança, mensageria, cache e dependências; o da Lambda notification, os de envio de e-mail. Dashboards e monitores filtram `@oficina.event.name` conforme a pergunta
 operacional; uma contagem vazia não significa que o caminho correspondente não exista na implementação.
 
 O manifesto do Agent exclui os logs de `mailhog`, do próprio `agent` e de `kube-proxy` por
@@ -151,18 +183,18 @@ Cada uma é citada por sigla nos demais documentos e nos comentários do Terrafo
 | # | Limitação | Evidência | Consequência | Tratamento atual |
 | --- | --- | --- | --- | --- |
 | **L1** | **Sem Cluster Agent.** `kubernetes_state.*` não existe | `Live Pods → No Results Found → enable Kubernetes resources collection` | Sem réplicas desejadas contra disponíveis, sem `pod.ready`, sem estado de HPA | O dashboard conta pods que emitem métrica; não apresenta essa contagem como prontidão |
-| **L2** | **Sem integração AWS no destino** | Ausência de `aws.*` vindo do CloudWatch | Sem métricas de API Gateway e de RDS | O ambiente AWS Academy não permite criar a role exigida pela integração |
-| **L3** | **Probes excluídas na entrada** (`ignoreIncomingRequestHook`) | `incoming-request-filter.ts` na API | A rota de saúde não produz métrica, trace nem log de sucesso | Uptime vem do teste sintético externo definido em `synthetics.tf` |
-| **L4** | **Lambda com coleta sem instrumentação APM** | Extensão habilitável, `DD_TRACE_ENABLED=false`, sem SDK ou wrapper de tracing | Sem spans internos da função | Os dashboards usam métricas enhanced e logs, conforme a decisão do [ADR 0005 da Lambda](https://github.com/FIAP-15SOAT/oficina-mecanica-lambda-customer-auth/blob/main/docs/adr/0005-coleta-de-telemetria-sem-instrumentacao.md) |
+| **L2** | **Sem integração AWS no destino** | Ausência de `aws.*` vindo do CloudWatch | Sem métricas de API Gateway, RDS, ElastiCache, SNS e SQS — nem profundidade de fila nem idade da mensagem mais antiga | O laboratório não permite criar a role exigida pela integração; filas, outbox e cache são observados pelo que os serviços registram |
+| **L3** | **Probes excluídas na entrada** (`ignoreIncomingRequestHook`) | `incoming-request-filter.ts` em cada serviço | A rota de saúde não produz métrica, trace nem log de sucesso | Uptime vem dos testes sintéticos externos definidos em `synthetics.tf` |
+| **L4** | **Lambda customer-auth com coleta sem instrumentação APM** | Extensão habilitável, `DD_TRACE_ENABLED=false`, sem SDK ou wrapper de tracing | Sem spans internos da função | Os dashboards usam métricas enhanced e logs, conforme a decisão do [ADR 0005 da Lambda](https://github.com/FIAP-15SOAT/oficina-mecanica-lambda-customer-auth/blob/main/docs/adr/0005-coleta-de-telemetria-sem-instrumentacao.md) |
 | **L6** | **Histogramas OTLP viram *distributions*** | Configuração Datadog da métrica | `p95` exige agregações de percentil por métrica | `metrics.tf` habilita percentis somente para `http.server.request.duration` |
 | **L7** | **Coleta de logs de plataforma** | `DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL=true` | Consultas sem escopo misturam aplicação e componentes do cluster | O Agent exclui `mailhog`, `agent` e `kube-proxy`; consultas usam `service` por inclusão |
 | **L9** | **`version` não é tag de log** | Deployment sem `tags.datadoghq.com/version` | Não existe filtro de log pela tag `version` | O valor permanece consultável como atributo `@service.version` |
-| **L10** | **Ambiente efêmero** | Laboratório ligado sob demanda e destruído ao final | Ausência de dado é normal e o endpoint público muda a cada provisão | Monitores usam `notify_no_data = false`; o teste sintético alterna entre `live` e `paused` |
+| **L10** | **Ambiente efêmero** | Laboratório ligado sob demanda e destruído ao final | Ausência de dado é normal e o endpoint público muda a cada provisão | Monitores usam `notify_no_data = false`; os testes sintéticos alternam entre `live` e `paused` |
 | **L12** | **Valor de tag de métrica é normalizado para minúsculas; atributo de log não** | `http.request.method` responde `get`/`post`; `@oficina.work_order.status.current` responde `IN_DIAGNOSIS` | O dashboard de Ordens de Serviço exibe as duas grafias | Consultas preservam a grafia de cada fonte |
 | **L13** | **CPU de uso em nanocores, requests e limits em cores** | `usage.total` em nanocores; `requests` em cores | Comparação direta distorce a escala | Widgets dividem o uso por `1e9` |
 | **L14** | **Métricas de falha da Lambda dependem da ocorrência da falha** | `.errors`, `.timeouts`, `.out_of_memory` são sinais de evento da extensão | Sem ocorrências, a consulta pode retornar `No Data`, não necessariamente `OK` | `notify_no_data = false` evita alerta por ausência normal da série |
 | **L16** | **O funil mede saídas de status, não um único evento de atualização** | `dashboard_work_orders.tf` consulta o histograma de permanência | Não interpreta `work_order.status.updated` como contador universal de transições | Usa `count:oficina.work_order.status.duration by {oficina.work_order.status}` |
-| **L15** | **Eventos condicionais**: `quote.rejected`, `mail.send.failed`, `health.degraded` | Emitidos somente pelos caminhos correspondentes da aplicação | Widgets podem ficar vazios sem recusa ou falha no intervalo selecionado | Consultas usam o catálogo da API; ausência de ocorrência não é ausência de implementação |
+| **L15** | **Eventos condicionais**: `quote.rejected`, `notification.failed`, `health.degraded`, `saga.compensated`, `messaging.message.dead_lettered`, `messaging.outbox.publish_failed`, `payment.webhook.invalid_signature`, `cache.unavailable`, `cache.invalidation_failed` | Emitidos somente pelos caminhos correspondentes da aplicação | Widgets podem ficar vazios sem recusa ou falha no intervalo selecionado | Consultas usam os catálogos dos serviços e das Lambdas; ausência de ocorrência não é ausência de implementação |
 
 ---
 
@@ -184,16 +216,36 @@ Uma *distribution* custa **5 custom metrics por série**; com percentis habilita
 
 | Métrica | Tags indexadas | Séries estimadas | Custom metrics |
 | --- | --- | ---: | ---: |
-| `http.server.request.duration` | `env`, `service`, `http.route`, `http.response.status_code` | 16 rotas × ~6 códigos ≈ **96** | **~960** |
+| `http.server.request.duration` | `env`, `service`, `http.route`, `http.response.status_code` | 66 valores de rota × ~6 códigos ≈ **396** | **~3.960** |
 
-As três métricas de negócio **não** recebem a habilitação: elas continuam consultáveis por `avg`, `max`, `min`,
-`sum` e `count`, que são gratuitos, e nenhum monitor depende de percentil sobre elas. Habilitá-las dobraria o
-custo de cada uma sem responder nada que o máximo já não responda.
+**Como se chega aos 66 valores de rota.** Cada rota pertence a um único serviço, então as séries somam por
+serviço: rotas × códigos de status. As rotas foram contadas nos controllers de cada serviço, como modelos de
+caminho distintos (o método HTTP não é indexado), sem as duas rotas de saúde, que não são instrumentadas (L3),
+e com uma série `http.route:N/A` por serviço, das requisições sem rota casada:
+
+| Serviço | Rotas públicas | Rotas internas `/internal` | `N/A` | Total |
+| --- | ---: | ---: | ---: | ---: |
+| work-order | 21 | 2 | 1 | 24 |
+| identity | 8 | 3 | 1 | 12 |
+| billing | 12 (11 + o webhook do Mercado Pago) | 8 | 1 | 21 |
+| inventory | 6 | 2 | 1 | 9 |
+| **Soma** | **47** | **15** | **4** | **66** |
+
+Seis códigos por rota é um teto: a maior parte das rotas responde dois ou três códigos na prática. O número
+real fica em `Organization Settings → Usage → Custom Metrics`, e o procedimento para registrá-lo está no
+[Runbook](runbook.md#cota-de-custom-metrics).
+
+As demais *distributions* — as três de ordem de serviço, `oficina.saga.duration`, `http.client.request.duration`
+e `db.client.operation.duration` — **não** recebem a habilitação nem outra configuração: custam 5 custom metrics
+por combinação de tags emitida e continuam consultáveis por `avg`, `max`, `min`, `sum` e `count`, que não
+custam nada a mais. Nenhum monitor depende de percentil sobre elas, e habilitá-las dobraria o custo de cada uma
+sem responder nada que o máximo já não responda.
 
 **A alavanca de redução é uma linha.** Remover `http.response.status_code` da lista de
-`http.server.request.duration` derruba a estimativa de ~960 para **~160** — total de ~250 — e move "erro por
+`http.server.request.duration` derruba a estimativa de ~3.960 para **~660** (66 séries × 10) e move "erro por
 rota" para os logs, onde `@http.route` e `@http.response.status_code` já são facetas confirmadas. O custo é
-perder a série de 5xx por rota no dashboard e a base dos monitores de erros 5xx e de falhas no fluxo de ordens de serviço, que passariam a monitores de log.
+perder a série de 5xx por rota no dashboard de cada serviço e a base dos monitores de erros 5xx e de falhas no
+fluxo de ordens de serviço, que passariam a monitores de log.
 
 Descartado do índice, deliberadamente, e por isso indisponível para consulta de métrica:
 `url.scheme`, `network.protocol.version`, `http.request.method`, `version` e `error.type`.
@@ -207,7 +259,7 @@ Descartado do índice, deliberadamente, e por isso indisponível para consulta d
 - **Métricas derivadas de log.** A cardinalidade atual não justifica.
 - **Objetivos de nível de serviço.** Um objetivo com janela de 30 dias sobre um ambiente deliberadamente
   desligado na maior parte do tempo produziria um número sem significado. O requisito de *uptime* é atendido
-  pela taxa de sucesso do teste sintético na janela do dashboard.
+  pela taxa de sucesso dos testes sintéticos na janela do dashboard.
 
 O manifesto do Agent exclui atualmente `name:mailhog name:agent name:kube-proxy`.
 `name:metrics-server`, `name:coredns` e `name:aws-node` permanecem coletados para preservar sinais da plataforma.

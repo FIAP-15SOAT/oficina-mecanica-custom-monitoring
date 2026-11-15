@@ -1,12 +1,26 @@
+locals {
+  kubernetes_scope = "kube_cluster_name:${var.kube_cluster_name},$kube_namespace"
+}
+
 resource "datadog_dashboard" "kubernetes" {
   title       = "Oficina Mecânica · Kubernetes"
-  description = "Recursos dos pods da API, medidos pelo kubelet."
+  description = "Recursos dos pods dos serviços e da plataforma, por namespace e com filtro por namespace, medidos pelo kubelet."
   layout_type = "ordered"
   tags        = local.dashboard_tags
 
+  # The destination unions several defaults with `OR`, so the scope keeps only
+  # commas; listing the namespaces keeps `*` (kube-system and others) out of the
+  # default view.
+  template_variable {
+    name             = "kube_namespace"
+    prefix           = "kube_namespace"
+    available_values = tolist(local.kube_namespaces)
+    defaults         = tolist(local.kube_namespaces)
+  }
+
   widget {
     note_definition {
-      content          = "**Os pods da API estão com folga de recurso, ou vão ser encerrados?** Janela padrão de 4 horas.\n\n**Não há Cluster Agent nesta instalação.** A coleta de recursos do cluster está desligada (`Live Pods → No Results Found`), então `kubernetes_state.*` não existe: não há réplicas desejadas contra disponíveis, `pod.ready`, condição de nó nem estado de HPA. O widget de réplicas abaixo conta pods que **emitem métrica**, que é uma aproximação de \"pods vivos\", não de \"pods prontos\".\n\nPara a visão de plataforma que este dashboard não cobre, o destino já traz um dashboard pronto: **Kubernetes** (`Dashboards → Kubernetes`), alimentado pela mesma coleta do kubelet.\n\nMemória é `working_set`, e não `usage`, porque `working_set` é o que o encerramento por falta de memória observa. CPU de uso vem em **nanocores** e é dividida por 1e9 para comparar com `requests` e `limits`, que vêm em cores."
+      content          = "**Os pods dos serviços e da plataforma estão com folga de recurso, ou vão ser encerrados?** Janela padrão de 4 horas.\n\nCada serviço roda no namespace com o nome dele (${join(", ", [for k in keys(local.services) : "`${k}`"])}); o namespace `platform` tem o Datadog Agent e o MailHog (o servidor de e-mail de teste). Os gráficos separam os pods por namespace, e o filtro `kube_namespace` no topo mostra só os namespaces escolhidos; os indicadores de pods por namespace e os gráficos dos nós não seguem o filtro.\n\n**Não há Cluster Agent nesta instalação.** A coleta de recursos do cluster está desligada (`Live Pods → No Results Found`), então `kubernetes_state.*` não existe: não há réplicas desejadas contra disponíveis, `pod.ready`, condição de nó nem estado de HPA. Os indicadores de pods abaixo contam pods que **emitem métrica**, que é uma aproximação de \"pods vivos\", não de \"pods prontos\".\n\nPara a visão de plataforma que este dashboard não cobre, o destino já traz um dashboard pronto: **Kubernetes** (`Dashboards → Kubernetes`), alimentado pela mesma coleta do kubelet.\n\nMemória é `working_set`, e não `usage`, porque `working_set` é o que o encerramento por falta de memória observa. CPU de uso vem em **nanocores** e é dividida por 1e9 para comparar com `requests` e `limits`, que vêm em cores."
       background_color = "blue"
       font_size        = "14"
       text_align       = "left"
@@ -36,7 +50,7 @@ resource "datadog_dashboard" "kubernetes" {
               metric_query {
                 data_source = "metrics"
                 name        = "uso"
-                query       = "avg:kubernetes.cpu.usage.total{${local.k8s_scope}} by {pod_name}"
+                query       = "avg:kubernetes.cpu.usage.total{${local.kubernetes_scope}} by {kube_namespace,pod_name}"
               }
             }
           }
@@ -52,7 +66,7 @@ resource "datadog_dashboard" "kubernetes" {
               metric_query {
                 data_source = "metrics"
                 name        = "requests"
-                query       = "avg:kubernetes.cpu.requests{${local.k8s_scope}} by {pod_name}"
+                query       = "avg:kubernetes.cpu.requests{${local.kubernetes_scope}} by {kube_namespace,pod_name}"
               }
             }
 
@@ -72,7 +86,7 @@ resource "datadog_dashboard" "kubernetes" {
               metric_query {
                 data_source = "metrics"
                 name        = "limits"
-                query       = "avg:kubernetes.cpu.limits{${local.k8s_scope}} by {pod_name}"
+                query       = "avg:kubernetes.cpu.limits{${local.kubernetes_scope}} by {kube_namespace,pod_name}"
               }
             }
 
@@ -100,7 +114,7 @@ resource "datadog_dashboard" "kubernetes" {
               metric_query {
                 data_source = "metrics"
                 name        = "estrangulados"
-                query       = "sum:kubernetes.cpu.cfs.throttled.periods{${local.k8s_scope}} by {pod_name}"
+                query       = "sum:kubernetes.cpu.cfs.throttled.periods{${local.kubernetes_scope}} by {kube_namespace,pod_name}"
               }
             }
 
@@ -108,7 +122,7 @@ resource "datadog_dashboard" "kubernetes" {
               metric_query {
                 data_source = "metrics"
                 name        = "periodos"
-                query       = "sum:kubernetes.cpu.cfs.periods{${local.k8s_scope}} by {pod_name}"
+                query       = "sum:kubernetes.cpu.cfs.periods{${local.kubernetes_scope}} by {kube_namespace,pod_name}"
               }
             }
           }
@@ -129,12 +143,12 @@ resource "datadog_dashboard" "kubernetes" {
           show_legend = true
 
           request {
-            q            = "avg:kubernetes.memory.working_set{${local.k8s_scope}} by {pod_name}"
+            q            = "avg:kubernetes.memory.working_set{${local.kubernetes_scope}} by {kube_namespace,pod_name}"
             display_type = "area"
           }
 
           request {
-            q            = "avg:kubernetes.memory.limits{${local.k8s_scope}} by {pod_name}"
+            q            = "avg:kubernetes.memory.limits{${local.kubernetes_scope}} by {kube_namespace,pod_name}"
             display_type = "line"
 
             style {
@@ -161,7 +175,7 @@ resource "datadog_dashboard" "kubernetes" {
               metric_query {
                 data_source = "metrics"
                 name        = "uso"
-                query       = "avg:kubernetes.memory.working_set{${local.k8s_scope}} by {pod_name}"
+                query       = "avg:kubernetes.memory.working_set{${local.kubernetes_scope}} by {kube_namespace,pod_name}"
               }
             }
 
@@ -169,7 +183,7 @@ resource "datadog_dashboard" "kubernetes" {
               metric_query {
                 data_source = "metrics"
                 name        = "limite"
-                query       = "avg:kubernetes.memory.limits{${local.k8s_scope}} by {pod_name}"
+                query       = "avg:kubernetes.memory.limits{${local.kubernetes_scope}} by {kube_namespace,pod_name}"
               }
             }
           }
@@ -191,38 +205,42 @@ resource "datadog_dashboard" "kubernetes" {
   }
 
   # ---------------------------------------------------------------------------
-  # Ciclo de vida
+  # Lifecycle
   # ---------------------------------------------------------------------------
   widget {
     group_definition {
       layout_type = "ordered"
       title       = "Ciclo de vida"
 
-      # `kubernetes.containers.running` não carrega `pod_name` (responde `N/A`),
-      # então a contagem sai de `count_nonzero` sobre uma métrica que carrega.
-      # Isso conta pods que emitem métrica, não pods prontos.
-      widget {
-        query_value_definition {
-          title      = "Pods emitindo métrica"
-          live_span  = "4h"
-          autoscale  = false
-          precision  = 0
-          text_align = "center"
+      # `kubernetes.containers.running` has no `pod_name` (it answers `N/A`), so
+      # the count comes from `count_nonzero` over a metric that has it. This
+      # counts pods emitting metrics, not ready pods.
+      dynamic "widget" {
+        for_each = local.kube_namespaces
 
-          request {
-            q          = "count_nonzero(avg:kubernetes.memory.working_set{${local.k8s_scope}} by {pod_name})"
-            aggregator = "last"
+        content {
+          query_value_definition {
+            title      = "Pods emitindo métrica · ${widget.value}"
+            live_span  = "4h"
+            autoscale  = false
+            precision  = 0
+            text_align = "center"
 
-            conditional_formats {
-              comparator = "<"
-              value      = 1
-              palette    = "white_on_red"
-            }
+            request {
+              q          = "count_nonzero(avg:kubernetes.memory.working_set{kube_cluster_name:${var.kube_cluster_name},kube_namespace:${widget.value}} by {pod_name})"
+              aggregator = "last"
 
-            conditional_formats {
-              comparator = ">="
-              value      = 1
-              palette    = "white_on_green"
+              conditional_formats {
+                comparator = "<"
+                value      = 1
+                palette    = "white_on_red"
+              }
+
+              conditional_formats {
+                comparator = ">="
+                value      = 1
+                palette    = "white_on_green"
+              }
             }
           }
         }
@@ -244,7 +262,7 @@ resource "datadog_dashboard" "kubernetes" {
               metric_query {
                 data_source = "metrics"
                 name        = "reinicios"
-                query       = "max:kubernetes.containers.restarts{${local.k8s_scope}} by {pod_name}"
+                query       = "max:kubernetes.containers.restarts{${local.kubernetes_scope}} by {kube_namespace,pod_name}"
               }
             }
           }

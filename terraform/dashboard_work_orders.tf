@@ -13,7 +13,7 @@ resource "datadog_dashboard" "work_orders" {
   template_variable {
     name     = "service"
     prefix   = "service"
-    defaults = [var.api_service]
+    defaults = [local.services["work-order"].service]
   }
 
   widget {
@@ -32,9 +32,9 @@ resource "datadog_dashboard" "work_orders" {
       layout_type = "ordered"
       title       = "Volume"
 
-      # Total inequívoco da janela. A última barra do gráfico ao lado é sempre
-      # parcial -- o intervalo corrente ainda está enchendo -- e o destino a
-      # rotula `interval in progress`; este indicador não tem esse problema.
+      # Unambiguous window total. The last bar of the chart beside it is always
+      # partial (the current interval is still filling) and the destination
+      # labels it `interval in progress`; this value has no such problem.
       widget {
         query_value_definition {
           title      = "Ordens de serviço criadas na janela"
@@ -50,11 +50,10 @@ resource "datadog_dashboard" "work_orders" {
         }
       }
 
-      # Sem `rollup` fixo. Um `rollup(sum, 86400)` prende o balde a um dia
-      # inteiro, que só fecha à meia-noite: em qualquer janela que não termine
-      # ali, o balde corrente exibe um total parcial como se fosse o do dia.
-      # Deixando o destino escolher o intervalo, a largura da barra acompanha a
-      # janela selecionada.
+      # No fixed `rollup`. A `rollup(sum, 86400)` pins the bucket to a whole day,
+      # which closes only at midnight: in any window ending elsewhere, the current
+      # bucket shows a partial total as if it were the day's. Letting the
+      # destination pick the interval makes the bar width follow the window.
       widget {
         timeseries_definition {
           title     = "Ordens de serviço criadas ao longo da janela"
@@ -232,19 +231,19 @@ resource "datadog_dashboard" "work_orders" {
       layout_type = "ordered"
       title       = "Funil e decisões"
 
-      # O funil sai da MÉTRICA, não do log. `oficina.work_order.status.duration`
-      # é emitida quando a ordem SAI de um status, então `count:` dela por
-      # status responde quantas ordens avançaram de cada etapa.
+      # The funnel comes from the METRIC, not the log. `oficina.work_order.status.duration`
+      # is emitted when the order LEAVES a status, so its `count:` by status
+      # answers how many orders moved past each step.
       #
-      # O evento de log `work_order.status.updated` não serve aqui: ele só é
-      # emitido em duas das seis transições (`RECEIVED -> IN_DIAGNOSIS` e
-      # `COMPLETED -> DELIVERED`). As demais são efeito de ações de domínio e
-      # emitem os seus próprios eventos.
+      # The log event `work_order.status.updated` does not fit: it is emitted on
+      # only two of the six transitions (`RECEIVED -> IN_DIAGNOSIS` and
+      # `COMPLETED -> DELIVERED`). The others are side effects of domain actions
+      # and emit their own events.
       #
-      # `aggregator = "sum"` é obrigatório: um toplist reduz a série temporal a
-      # um número, e o padrão dessa redução é a MÉDIA -- que sobre uma contagem
-      # por intervalo devolve coisas como `1.5 ordens`. A forma curta
-      # `q = "..."` não permite escolher o redutor; a forma de fórmula, sim.
+      # `aggregator = "sum"` is required: a toplist reduces the series to one
+      # number, and the default reduction is the MEAN, which over a per-interval
+      # count gives values like `1.5 orders`. The short `q = "..."` form cannot
+      # pick the reducer; the formula form can.
       widget {
         toplist_definition {
           title     = "Ordens que saíram de cada status na janela"
@@ -280,7 +279,7 @@ resource "datadog_dashboard" "work_orders" {
 
       widget {
         toplist_definition {
-          title     = "Decisões de orçamento — aprovados contra recusados"
+          title     = "Decisões de orçamento no billing — aprovados contra recusados"
           live_span = "1w"
 
           request {
@@ -299,7 +298,7 @@ resource "datadog_dashboard" "work_orders" {
                 }
 
                 search {
-                  query = "service:$service env:$env @oficina.event.name:(quote.approved OR quote.rejected)"
+                  query = "service:${local.services["billing"].service} env:$env @oficina.event.name:(quote.approved OR quote.rejected)"
                 }
 
                 group_by {

@@ -100,18 +100,18 @@ possui reviewers nem política própria de branch; a restrição à `main` é fe
 | 6 | Terraform Validate | Executa `terraform validate -no-color`. | Há inconsistência de configuração. |
 | 7 | Terraform Plan | Executa `terraform plan -no-color`; consulta providers e states necessários e mostra as alterações. | Qualquer erro de plan, incluindo acesso aos states e APIs necessários. |
 | 8 | Terraform Apply | Executa `terraform apply -auto-approve -no-color`; calcula seu próprio plano, pois não há plano salvo no step anterior. | Qualquer erro ao planejar/aplicar os recursos. |
-| 9 | Publish dashboard addresses in the job summary | Obtém os outputs e publica os endereços dos quatro dashboards e o estado do teste sintético no resumo do run. | A escrita do resumo no `$GITHUB_STEP_SUMMARY` falha. |
+| 9 | Publish dashboard addresses in the job summary | Obtém os outputs e publica no resumo do run os endereços dos dashboards (Visão Geral, um por serviço, Ordens de Serviço, Kubernetes, Sagas, Pagamentos e Mensageria) e o estado dos testes sintéticos. | A escrita do resumo no `$GITHUB_STEP_SUMMARY` falha. |
 
 **A validação explícita de segredos vem logo após o checkout, antes de instalar ferramentas ou chamar a nuvem.** Falhar ali, com o nome do que falta, custa segundos.
 Falhar no meio do `apply` deixa a conta em estado parcial. `ALERT_EMAILS` entra na validação porque, sem
-destinatários, os nove monitores seriam criados corretamente e **não notificariam ninguém** — a pior falha
+destinatários, os monitores seriam criados corretamente e **não notificariam ninguém** — a pior falha
 possível para este repositório, porque é silenciosa.
 
 **Portão pós-entrega recusado.** Consultar a API do destino verificando o estado dos monitores após o `apply`
 seria instável: um monitor legitimamente em alerta reprovaria uma entrega correta.
 
 **A entrega falha com o laboratório fora**, e isso é correto: sem o state do gateway não há `api_endpoint`, e
-sem ele não há teste sintético. Ver [Infraestrutura](terraform.md#state-remoto-consumido).
+sem ele não há testes sintéticos. Ver [Infraestrutura](terraform.md#state-remoto-consumido).
 
 ---
 
@@ -140,9 +140,9 @@ Tudo o que precisa existir fora do código. Reconfigurar o repositório do zero 
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | `DD_API_KEY` | Secret | Organização | **Sim** | `provider.api_key` | CI (plan), CD (plan, apply) |
 | 2 | `DD_APP_KEY` | Secret | **Repositório** | **Sim** | `provider.app_key` | CI (plan), CD (plan, apply) |
-| 3 | `ALERT_EMAILS` | Variable | Repositório | **Sim** | destinatários dos nove monitores, separados por vírgula | CI, CD |
+| 3 | `ALERT_EMAILS` | Variable | Repositório | **Sim** | destinatários de todos os monitores, separados por vírgula | CI, CD |
 | 4 | `ENABLE_DEPLOY` | Variable | Repositório | **Sim** | interruptor do CD | CD |
-| 5 | `ENVIRONMENT_ONLINE` | Variable | Repositório | **Sim** | alterna o teste sintético entre `live` e `paused` | CI, CD |
+| 5 | `ENVIRONMENT_ONLINE` | Variable | Repositório | **Sim** | alterna os testes sintéticos entre `live` e `paused` | CI, CD |
 | 6 | `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_SESSION_TOKEN` | Secrets | Organização | **Sim** no CD, opcional no CI | backend S3 e leitura do state do gateway | CI (prévia), CD |
 | 7 | `BOT_APP_ID` / `BOT_PRIVATE_KEY` | Variable / Secret | Organização | **Sim para abertura automática de PR** | `open-pr` gera o token sem condição; não são inputs da validação/aplicação Terraform | CI |
 | 8 | `TF_STATE_BUCKET` | Variable | Organização | **Sim** | nome do bucket de state, em variável para trocá-lo sem editar arquivo versionado: vai ao `terraform init` por `-backend-config` e a `TF_VAR_gateway_state_bucket`; sem ela, o `init` falha | CI, CD |
@@ -164,9 +164,9 @@ somente que os valores necessários estavam disponíveis para aquele run.
 
    | Escopo | Para quê |
    | --- | --- |
-   | `dashboards_read`, `dashboards_write` | os quatro dashboards |
-   | `monitors_read`, `monitors_write` | os nove monitores |
-   | `synthetics_read`, `synthetics_write` | o teste sintético |
+   | `dashboards_read`, `dashboards_write` | os dashboards |
+   | `monitors_read`, `monitors_write` | os monitores |
+   | `synthetics_read`, `synthetics_write` | os testes sintéticos |
    | `metrics_read` | leitura de metadado de métrica |
    | `metric_tags_write` | **a configuração de tags de métrica**. Não existe escopo chamado `metrics_write`; o que `POST /api/v2/metrics/{metric}/tags` exige é este. `metrics_metadata_write` é outra coisa — unidade e descrição da métrica — e não serve |
    | `timeseries_query` | **não é usado pelo Terraform.** É exigido por `GET /api/v1/query`, que é como se confirma um nome de métrica e como se lê o p95 real na calibração de limiar |
@@ -227,4 +227,4 @@ em uso nos cinco repositórios, e o laboratório é destruído ao fim de cada se
 | `plan` falha com `missing_aggregation :: AGG_AVG/AGG_P95` | A configuração de tags da métrica ainda não foi aplicada | É esperado na primeiríssima execução; o `depends_on` do monitor de latência cobre a ordem no `apply` |
 | `apply` falha na trava do state | Outra execução em andamento | Aguardar. `cancel-in-progress: false` é proposital |
 | Monitores criados e ninguém recebe e-mail | `ALERT_EMAILS` vazio ou mal formado | O CD valida antes do `apply`; conferir a variable |
-| Teste sintético executando com o ambiente fora | `ENVIRONMENT_ONLINE` ficou `true` | Ajustar a variable e reexecutar o CD |
+| Testes sintéticos executando com o ambiente fora | `ENVIRONMENT_ONLINE` ficou `true` | Ajustar a variable e reexecutar o CD |

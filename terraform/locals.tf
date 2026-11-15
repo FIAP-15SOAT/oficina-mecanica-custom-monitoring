@@ -1,15 +1,27 @@
 locals {
-  api_scope = "env:${var.env},service:${var.api_service}"
+  # The key is the bounded context, which is also the Kubernetes namespace and
+  # the segment of the public health route `/health/<key>`.
+  services = {
+    "work-order" = { service = "oficina-mecanica-work-order-service", kube_deployment = "work-order-service" }
+    identity     = { service = "oficina-mecanica-identity-service", kube_deployment = "identity-service" }
+    billing      = { service = "oficina-mecanica-billing-service", kube_deployment = "billing-service" }
+    inventory    = { service = "oficina-mecanica-inventory-service", kube_deployment = "inventory-service" }
+  }
 
-  # O destino recusa `AND`/`OR` misturados com `,` no mesmo escopo. Onde a
-  # consulta precisa de `OR`, a vírgula tem de virar `AND` na expressão inteira.
-  api_scope_and = "env:${var.env} AND service:${var.api_service}"
+  lambdas = {
+    "customer-auth" = { function_name = "lbd-oficina-mecanica-customer-auth", service = "oficina-mecanica-lambda-customer-auth" }
+    notification    = { function_name = "lbd-oficina-mecanica-notification", service = "oficina-mecanica-lambda-notification" }
+  }
 
-  k8s_scope    = "kube_deployment:${var.api_kube_deployment}"
-  lambda_scope = "functionname:${var.lambda_function_name}"
-  log_scope    = "service:${var.api_service} env:${var.env}"
+  service_scope     = { for k, v in local.services : k => "env:${var.env},service:${v.service}" }
+  service_log_scope = { for k, v in local.services : k => "service:${v.service} env:${var.env}" }
+  service_k8s_scope = { for k, v in local.services : k => "kube_namespace:${k},kube_deployment:${v.kube_deployment}" }
+  lambda_scope      = { for k, v in local.lambdas : k => "functionname:${v.function_name}" }
 
-  work_order_routes = "(http.route:/api/work-orders* OR http.route:/api/quotes*)"
+  # The destination rejects `,` mixed with `AND`/`OR` in one scope, so this one is `AND`-joined.
+  services_scope = "env:${var.env} AND (${join(" OR ", [for v in values(local.services) : "service:${v.service}"])})"
+
+  kube_namespaces = toset(concat(keys(local.services), ["platform"]))
 
   api_endpoint = data.terraform_remote_state.gateway.outputs.api_endpoint
 
@@ -19,32 +31,32 @@ locals {
     "env:${var.env}",
   ]
 
-  api_tags = concat(local.common_tags, ["service:${var.api_service}"])
+  service_tags = { for k, v in local.services : k => concat(local.common_tags, ["service:${v.service}"]) }
+  lambda_tags  = { for k, v in local.lambdas : k => concat(local.common_tags, ["service:${v.service}"]) }
 
-  # Dashboard só aceita as chaves `team` e `ai` -- qualquer outra volta
-  # 400 "Invalid tag format". A restrição é do destino e vale só para
-  # dashboards: monitor e teste sintético aceitam tag arbitrária.
+  # Dashboards accept only the `team` and `ai` tag keys; any other key returns
+  # 400 "Invalid tag format". Monitors and synthetic tests accept any tag.
   dashboard_tags = ["team:${var.project_name}"]
 
-  # `datadog_dashboard.url` devolve CAMINHO (`/dashboard/<id>/<slug>`), não
-  # endereço absoluto. Num resumo de execução do GitHub ou num e-mail de
-  # alerta, esse caminho resolve contra o domínio errado e o link chega
-  # quebrado.
+  # `datadog_dashboard.url` returns a PATH (`/dashboard/<id>/<slug>`), not an
+  # absolute URL. In a GitHub run summary or an alert e-mail the path resolves
+  # against the wrong domain and the link arrives broken.
   datadog_app_base = trimsuffix(var.datadog_app_url, "/")
 
   dashboard_url_overview    = "${local.datadog_app_base}${datadog_dashboard.overview.url}"
-  dashboard_url_api         = "${local.datadog_app_base}${datadog_dashboard.api.url}"
+  dashboard_url_service     = { for k, d in datadog_dashboard.service : k => "${local.datadog_app_base}${d.url}" }
   dashboard_url_work_orders = "${local.datadog_app_base}${datadog_dashboard.work_orders.url}"
   dashboard_url_kubernetes  = "${local.datadog_app_base}${datadog_dashboard.kubernetes.url}"
-  lambda_tags               = concat(local.common_tags, ["service:oficina-mecanica-lambda-customer-auth"])
+  dashboard_url_sagas       = "${local.datadog_app_base}${datadog_dashboard.sagas.url}"
+  dashboard_url_payments    = "${local.datadog_app_base}${datadog_dashboard.payments.url}"
+  dashboard_url_messaging   = "${local.datadog_app_base}${datadog_dashboard.messaging.url}"
 
+  logs_url_service_errors = { for k, s in local.service_log_scope : k => "${var.datadog_app_url}logs?query=${urlencode("${s} status:error")}" }
+  logs_url_health         = { for k, s in local.service_log_scope : k => "${var.datadog_app_url}logs?query=${urlencode("${s} @oficina.event.name:health.degraded")}" }
+  logs_url_pods           = { for k, s in local.service_log_scope : k => "${var.datadog_app_url}logs?query=${urlencode(s)}" }
+  logs_url_lambda         = { for k, v in local.lambdas : k => "${var.datadog_app_url}logs?query=${urlencode("service:${v.service} status:error")}" }
 
-  logs_url_api_errors  = "${var.datadog_app_url}logs?query=${urlencode("${local.log_scope} status:error")}"
-  logs_url_work_orders = "${var.datadog_app_url}logs?query=${urlencode("${local.log_scope} @oficina.event.name:work_order.status.updated")}"
-  logs_url_mail        = "${var.datadog_app_url}logs?query=${urlencode("${local.log_scope} @oficina.event.name:mail.send.failed")}"
-  logs_url_health      = "${var.datadog_app_url}logs?query=${urlencode("${local.log_scope} @oficina.event.name:health.degraded")}"
-  logs_url_lambda      = "${var.datadog_app_url}logs?query=${urlencode("service:oficina-mecanica-lambda-customer-auth status:error")}"
-  logs_url_pods        = "${var.datadog_app_url}logs?query=${urlencode("${local.log_scope}")}"
+  runbook_url = "https://github.com/FIAP-15SOAT/oficina-mecanica-custom-monitoring/blob/main/docs/runbook.md"
 
   alert_footer = join(" ", [for e in split(",", var.alert_emails) : "@${trimspace(e)}"])
 
@@ -56,7 +68,7 @@ locals {
     Observado: **{{value}}** $${unit} (limite: {{threshold}}) na janela de $${window}
     Desde: {{first_triggered_at}}
 
-    [Dashboard]($${dashboard_url}) · [Logs]($${logs_url})
+    [Dashboard]($${dashboard_url}) · [Logs]($${logs_url}) · [Runbook]($${runbook_url})
 
     {{#is_recovery}}✅ Recuperado após {{triggered_duration_sec}}s.{{/is_recovery}}
 
@@ -66,11 +78,11 @@ locals {
   synthetic_message = <<-EOT
     {{#is_alert}}🔴 **Rota pública indisponível** — a verificação externa falhou em ao menos ${var.synthetic_min_location_failed} das ${length(var.synthetic_locations)} localidades por mais de ${var.synthetic_min_failure_duration_seconds / 60} minutos{{/is_alert}}
 
-    Serviço: `${var.api_service}` · Ambiente: `${var.env}`
-    Verificação: `GET ${local.api_endpoint}/api/health/ready` — esperado `200` em menos de ${var.synthetic_response_time_ms} ms
+    Serviço: `$${service}` · Ambiente: `${var.env}`
+    Verificação: `GET $${url}` — esperado `200` em menos de ${var.synthetic_response_time_ms} ms
     Desde: {{first_triggered_at}}
 
-    [Dashboard](${local.dashboard_url_api}) · [Logs](${local.logs_url_api_errors})
+    [Dashboard]($${dashboard_url}) · [Logs]($${logs_url}) · [Runbook]($${runbook_url})
 
     {{#is_recovery}}✅ Recuperado após {{triggered_duration_sec}}s.{{/is_recovery}}
 

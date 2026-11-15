@@ -6,14 +6,14 @@ Aceito — 2026-09-09
 
 ## Contexto
 
-Esta stack provisiona **apenas recursos Datadog**: dashboards, monitores, um teste sintético e configurações de
+Esta stack provisiona **apenas recursos Datadog**: dashboards, monitores, um teste sintético por serviço e configurações de
 tag de métrica. Nenhum recurso AWS é criado aqui.
 
 Mesmo assim ela precisa de um lugar para o state, e precisa de trava — o CD pode ser acionado manualmente
 enquanto alguém roda `plan` no próprio computador, e duas execuções simultâneas sobre o mesmo state o
 corrompem.
 
-Há um segundo motivo, independente do primeiro, para a AWS entrar na equação: o teste sintético verifica o
+Há um segundo motivo, independente do primeiro, para a AWS entrar na equação: os testes sintéticos verificam o
 endereço público do gateway, que é regenerado a cada reprovisionamento do laboratório. Ler esse endereço do
 state do gateway exige credenciais AWS de qualquer forma — ver [ADR 0003](0003-uptime-por-verificacao-externa.md).
 

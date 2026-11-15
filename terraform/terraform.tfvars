@@ -1,10 +1,6 @@
-project_name = "oficina-mecanica"
-env          = "production"
-api_service  = "oficina-mecanica-work-order-service"
-
-api_kube_deployment  = "work-order-service"
-kube_cluster_name    = "oficina-mecanica"
-lambda_function_name = "lbd-oficina-mecanica-customer-auth"
+project_name      = "oficina-mecanica"
+env               = "production"
+kube_cluster_name = "oficina-mecanica"
 
 aws_region           = "us-east-1"
 gateway_state_key    = "infra/prod-simulated/api-gateway/terraform.tfstate"
@@ -26,9 +22,15 @@ pod_memory_critical_percent = 90
 pod_restart_critical_count  = 0
 lambda_error_critical_count = 0
 
-mail_failure_warning_count     = 2
-mail_failure_critical_count    = 5
-health_degraded_critical_count = 0
+notification_failure_warning_count  = 2
+notification_failure_critical_count = 5
+health_degraded_critical_count      = 0
+
+dead_letter_critical_count               = 0
+outbox_publish_failure_critical_count    = 10
+webhook_invalid_signature_critical_count = 3
+saga_compensation_critical_count         = 1
+cache_invalidation_critical_count        = 0
 
 synthetic_response_time_ms             = 5000
 synthetic_tick_every_seconds           = 300
