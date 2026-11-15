@@ -143,13 +143,19 @@ como redundância assumida.
 
 **Prioridade:** P2
 
-1. **Qualquer erro aqui é defeito.** A função devolve 401 como resposta normal de credencial inválida; erro de
-   plataforma é outra coisa.
-2. Visão Geral, grupo **Lambda**: erros contra invocações, e a duração.
-3. O link de logs da mensagem já está filtrado em `service:oficina-mecanica-lambda-customer-auth status:error`.
+Vale para as duas funções Lambda da solução, nomeadas no alerta: a customer-auth (login do cliente) e a
+notification (envio de e-mail).
+
+1. **Qualquer erro aqui é defeito.** Erro de plataforma é a execução da função que falhou (exceção não tratada,
+   prazo esgotado, falta de memória), não uma resposta de negócio: a customer-auth devolve 401 como resposta
+   normal de credencial inválida, e a notification devolve à fila a mensagem que não conseguiu enviar e registra
+   `notification.failed`, visto pelo alerta de falha de envio de e-mail.
+2. Visão Geral, grupo **Lambda** da função: erros contra invocações, e a duração.
+3. O link de logs da mensagem já está filtrado em `service:<serviço da função> status:error`.
 4. Duração próxima do limite de execução ⇒ expiração de prazo. `max_memory_used` próximo de `memorysize` ⇒
    falta de memória. Ambos incrementam `errors`.
-5. Sem traces na função (L4): os logs são a única evidência.
+5. A customer-auth não emite traces: os logs são a única evidência dela. A notification registra um span por
+   mensagem, dentro do trace de quem pediu o e-mail.
 
 ### Falha de envio de e-mail
 
@@ -171,6 +177,131 @@ como redundância assumida.
 2. Com o banco degradado, os alertas de erro e de latência do mesmo serviço provavelmente dispararão em seguida —
    trate a causa aqui.
 3. É o único sinal que nomeia a dependência: a rota de saúde não é observável por métrica nem trace (L3).
+
+### Mensagem na DLQ
+
+**Prioridade:** P2
+
+Os serviços trocam comandos e eventos por filas SQS FIFO (filas que entregam na ordem de envio), uma por
+consumidor: `work-order.fifo`, `billing.fifo` e `inventory.fifo`. Uma mensagem que falha 5 vezes seguidas vai
+para a DLQ (dead-letter queue, a fila de mensagens desistidas) da fila, `<consumidor>-dlq.fifo`, e a ordem de
+serviço a que ela pertence fica parada até a mensagem voltar. O alerta nomeia o **serviço** consumidor, a
+**fila** e o **tipo** da mensagem (por exemplo, `inventory.stock.reserve`, o pedido de reserva de estoque).
+
+1. Abra o link de logs da mensagem: ele mostra o evento `messaging.message.dead_lettered`, com o erro que fez o
+   consumidor desistir e o id da ordem de serviço.
+2. Siga o `trace_id` do evento até a falha original: banco fora do ar, defeito no código ou mensagem fora do
+   formato esperado.
+3. **Corrija a causa antes de devolver a mensagem.** Sem isso, ela volta a falhar 5 vezes e cai de novo na DLQ.
+4. Devolva as mensagens à fila de origem com `aws sqs start-message-move-task`, que aceita fila FIFO quando o
+   destino também é FIFO. O procedimento completo, com as esperas, está no
+   [runbook do repositório de mensageria](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-messaging/blob/main/docs/runbook.md#redrive-de-uma-dlq):
+
+   ```bash
+   # ARN da DLQ do consumidor nomeado no alerta (troque inventory pelo consumidor)
+   DLQ_URL=$(aws sqs get-queue-url --queue-name inventory-dlq.fifo --query QueueUrl --output text)
+   DLQ_ARN=$(aws sqs get-queue-attributes --queue-url "$DLQ_URL" --attribute-names QueueArn --query Attributes.QueueArn --output text)
+
+   # Devolver as mensagens à fila de origem
+   aws sqs start-message-move-task --source-arn "$DLQ_ARN"
+
+   # Acompanhar até o status COMPLETED
+   aws sqs list-message-move-tasks --source-arn "$DLQ_ARN"
+   ```
+
+5. **Verificação:** no dashboard de Mensageria, o consumo da fila volta a mostrar `success`, e no de Sagas a
+   Saga da ordem de serviço termina. O monitor se recupera sozinho quando nenhuma mensagem nova vai para a DLQ
+   na janela de 10 minutos.
+
+A fila `notification.fifo`, da Lambda notification, não aparece aqui: quem a vigia é o alerta de falha de envio
+de e-mail.
+
+### Relay do outbox parado
+
+**Prioridade:** P2
+
+Cada serviço grava a mensagem que vai publicar numa tabela `outbox` do próprio banco, na mesma transação da
+mudança de negócio, e um laço do serviço (o relay) a publica no tópico SNS `oficina-events.fifo` a cada meio
+segundo. Para não furar a ordem, o relay para no primeiro erro do lote e tenta de novo no ciclo seguinte. Cada
+tentativa que falha registra `messaging.outbox.publish_failed`; acima do limiar na janela de 5 minutos, a
+falha é persistente e **todas** as mensagens daquele serviço estão presas.
+
+1. Abra o link de logs da mensagem e leia o erro de `messaging.outbox.publish_failed` do serviço nomeado.
+2. Erro de autorização (`AccessDenied`, `ExpiredToken`): a credencial que o nó do cluster usa para publicar
+   expirou ou perdeu a permissão de `sns:Publish` no tópico.
+3. Tópico não encontrado (`NotFound`): o tópico foi destruído ou o serviço aponta para outro ARN, configurado
+   em `MESSAGING_TOPIC_ARN`.
+4. Tempo esgotado ou erro de rede: o SNS está inacessível a partir do cluster.
+5. **Verificação:** depois da correção, o relay publica as linhas pendentes sozinho, sem reiniciar o serviço.
+   O monitor se recupera na janela seguinte, e o consumo das filas volta a subir no dashboard de Mensageria.
+
+Uma falha isolada, publicada no ciclo seguinte, fica abaixo do limiar e aparece só no dashboard de Mensageria.
+
+### Webhook com assinatura inválida
+
+**Prioridade:** P2
+
+O Mercado Pago, o provedor de pagamento, avisa o billing de cada mudança de cobrança por uma notificação HTTP
+(webhook) assinada com uma chave secreta. O billing recusa a notificação cuja assinatura não confere e registra
+`payment.webhook.invalid_signature`. Acima do limiar, ou a chave configurada no billing diverge da do painel do
+Mercado Pago, e nenhuma cobrança é atualizada, ou alguém está tentando forjar notificações.
+
+1. Abra o link de logs da mensagem: muitas recusas seguidas, depois de uma troca de chave ou de uma entrega do
+   billing, apontam para chave divergente; recusas esparsas de origem desconhecida, para tentativa de forjar.
+2. Confira no painel do Mercado Pago a URL do webhook e a chave secreta, pelo
+   [runbook do billing](https://github.com/FIAP-15SOAT/oficina-mecanica-billing-service/blob/main/docs/runbook.md#url-do-webhook-no-painel).
+3. Se a chave mudou, grave a nova no billing pela
+   [troca da chave secreta do webhook](https://github.com/FIAP-15SOAT/oficina-mecanica-billing-service/blob/main/docs/runbook.md#troca-da-chave-secreta-do-webhook).
+4. **Verificação:** use **Simular notificação** no painel do Mercado Pago e confira, no dashboard de
+   Pagamentos, os webhooks voltando a sair como `valid`. Cobrança que continuar `PENDING` depois da correção
+   segue a [cobrança presa](https://github.com/FIAP-15SOAT/oficina-mecanica-billing-service/blob/main/docs/runbook.md#cobrança-presa)
+   do runbook do billing.
+
+### Compensações de Saga
+
+**Prioridade:** P3
+
+A aprovação de um orçamento atravessa três serviços numa Saga (`QUOTE_APPROVAL`), uma transação distribuída
+conduzida pelo work-order: o billing aprova, o inventory reserva as peças e o work-order muda a ordem de
+serviço. Se um passo falha, a Saga é compensada: os passos já feitos são desfeitos e a aprovação é revertida.
+Uma compensação isolada é desfecho de negócio; mais de uma na janela de 1 hora pede investigação. As Sagas de
+pagamento (`PAYMENT`) não entram no alerta, porque cobrança recusada, expirada ou cancelada é desfecho normal.
+
+1. Dashboard de Sagas, grupo **Compensações por motivo**: o motivo (`oficina.saga.failure_reason`) diz qual
+   passo falhou.
+2. `INSUFFICIENT_STOCK` (falta de estoque): confira o saldo das peças no inventory; a ação é de negócio
+   (reposição), não técnica.
+3. Outro motivo: siga o `trace_id` do evento `saga.compensated`, no link de logs da mensagem, até o serviço que
+   recusou o passo.
+4. **Verificação:** novas aprovações terminam `completed` no dashboard de Sagas. O limiar é provisório: calibre
+   pela seção de contagem abaixo depois de uma semana de tráfego.
+
+### Falha na limpeza do cache
+
+**Prioridade:** P3
+
+Cada serviço guarda no próprio cache (Valkey, compatível com Redis) as leituras por id, e apaga a chave
+afetada depois de confirmar uma escrita. Quando a exclusão falha, o serviço registra `cache.invalidation_failed`
+e a leitura seguinte devolve o valor antigo até a chave expirar, em até 12 horas.
+
+1. Abra o link de logs da mensagem: o evento nomeia o serviço e traz o erro do cache. Siga o `trace_id` dele
+   até a requisição ou mensagem que fez a escrita para saber qual registro mudou.
+2. Se o cache já responde, apague a chave desse registro para não esperar a expiração, com
+   `valkey-cli --tls -h "$CACHE_HOST" -p 6379 -a "$CACHE_TOKEN" --no-auth-warning DEL <chave>` num pod efêmero
+   no namespace do serviço. O pod, o endereço e o token são os do teste de conexão (seção 2.2) do runbook do
+   repositório de dados do serviço:
+
+   | Serviço | Chaves | Repositório de dados |
+   | --- | --- | --- |
+   | work-order | `work-order:work-order:<id>` | [`oficina-mecanica-infra-database-work-order`](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-database-work-order/blob/main/docs/runbook.md) |
+   | identity | `identity:user:<id>` | [`oficina-mecanica-infra-database-identity`](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-database-identity/blob/main/docs/runbook.md) |
+   | billing | `billing:quote:<id>` e `billing:work-order-quotes:<workOrderId>` | [`oficina-mecanica-infra-database-billing`](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-database-billing/blob/main/docs/runbook.md) |
+   | inventory | `inventory:service:<id>` e `inventory:part-supply:<id>` | [`oficina-mecanica-infra-database-inventory`](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-database-inventory/blob/main/docs/runbook.md) |
+
+3. Se o cache continua inacessível, a chave expira sozinha em até 12 horas; o mesmo teste de conexão diz se o
+   problema é rede, senha ou o próprio cache.
+4. **Verificação:** a leitura por id devolve o valor novo, e o monitor se recupera na janela seguinte de 10
+   minutos.
 
 ---
 

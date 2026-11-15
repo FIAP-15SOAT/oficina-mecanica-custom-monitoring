@@ -45,6 +45,11 @@ output "monitor_ids" {
     lambda_erros            = { for k, m in datadog_monitor.lambda_errors : k => m.id }
     ordens_de_servico       = datadog_monitor.work_order_failures.id
     email_falha_envio       = datadog_monitor.mail_send_failed.id
+    mensagem_na_dlq         = datadog_monitor.dead_lettered.id
+    relay_outbox_parado     = datadog_monitor.outbox_publish_failed.id
+    webhook_assinatura      = datadog_monitor.webhook_invalid_signature.id
+    compensacoes_saga       = datadog_monitor.saga_compensations.id
+    cache_falha_limpeza     = datadog_monitor.cache_invalidation_failed.id
   }
 }
 

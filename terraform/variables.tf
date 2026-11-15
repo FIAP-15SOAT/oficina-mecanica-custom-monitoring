@@ -186,6 +186,36 @@ variable "health_degraded_critical_count" {
   default     = 0
 }
 
+variable "dead_letter_critical_count" {
+  description = "Messaging.message.dead_lettered events per service, queue and message type in 10 minutes that raise an alert. Zero: each one leaves a work order stuck until the redrive"
+  type        = number
+  default     = 0
+}
+
+variable "outbox_publish_failure_critical_count" {
+  description = "Messaging.outbox.publish_failed events per service in 5 minutes that raise an alert. Provisional: the relay retries every 0.5 s plus up to 2 s of timeout, so a persistent failure logs over 120 events in 5 minutes and an isolated one logs 1"
+  type        = number
+  default     = 10
+}
+
+variable "webhook_invalid_signature_critical_count" {
+  description = "Payment.webhook.invalid_signature events in 15 minutes that raise an alert. Provisional: a wrong secret rejects every notification and Mercado Pago resends them, while an isolated probe stays below"
+  type        = number
+  default     = 3
+}
+
+variable "saga_compensation_critical_count" {
+  description = "QUOTE_APPROVAL sagas finished compensated in 1 hour that raise an alert. Provisional: one compensation is a business outcome, two in a row call for a look at the stock"
+  type        = number
+  default     = 1
+}
+
+variable "cache_invalidation_critical_count" {
+  description = "Cache.invalidation_failed events per service in 10 minutes that raise an alert. Zero: the stale value stays until the 12 h TTL"
+  type        = number
+  default     = 0
+}
+
 variable "synthetic_response_time_ms" {
   description = "Upper bound, in milliseconds, asserted on the public health route"
   type        = number

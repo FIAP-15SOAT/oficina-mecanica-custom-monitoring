@@ -36,6 +36,12 @@ notification_failure_warning_count  = 2
 notification_failure_critical_count = 5
 health_degraded_critical_count      = 0
 
+dead_letter_critical_count               = 0
+outbox_publish_failure_critical_count    = 10
+webhook_invalid_signature_critical_count = 3
+saga_compensation_critical_count         = 1
+cache_invalidation_critical_count        = 0
+
 synthetic_response_time_ms             = 5000
 synthetic_tick_every_seconds           = 300
 synthetic_min_location_failed          = 2
