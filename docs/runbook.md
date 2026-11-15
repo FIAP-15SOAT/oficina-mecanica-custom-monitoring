@@ -65,9 +65,12 @@ laboratório e não têm custo enquanto não há dado fluindo.
 
 ## O que fazer quando cada monitor dispara
 
-### Disponibilidade externa · rota pública indisponível · **P1**
+### Disponibilidade externa
 
-A rota `/api/health/ready` falhou em ao menos duas das três localidades por mais de dois minutos.
+**Prioridade:** P1
+
+A rota pública de saúde de um serviço (`/health/<contexto>`, nomeada no alerta) falhou em ao menos duas das três
+localidades por mais de dois minutos.
 
 1. **O ambiente deveria estar no ar?** Se foi derrubado sem ajustar `ENVIRONMENT_ONLINE`, o alerta é falso —
    execute o ritual de derrubada e o incidente acaba aqui.
@@ -79,7 +82,9 @@ A rota `/api/health/ready` falhou em ao menos duas das três localidades por mai
    entrega do gateway.
 5. Se os pods estão de pé e o endereço está certo, siga para o dashboard de API: latência e erros.
 
-### API · Erros 5xx acima do limite · **P2**
+### Erros 5xx acima do limite
+
+**Prioridade:** P2
 
 1. Abra o [dashboard de API](dashboards.md#oficina-mecânica--api). A **tabela de rotas** diz se o problema é de
    uma rota ou geral.
@@ -90,7 +95,9 @@ A rota `/api/health/ready` falhou em ao menos duas das três localidades por mai
 4. Grupo **Runtime**: `nodejs.eventloop.delay.p99` alto indica bloqueio de event loop.
 5. Se o alerta de ordens de serviço disparou junto, o impacto atinge o fluxo de negócio — priorize.
 
-### API · Latência p95 acima do alvo · **P3**
+### Latência p95 acima do alvo
+
+**Prioridade:** P3
 
 1. **Antes de tratar como incidente, verifique se o limiar é o problema.** Os valores são de percepção de
    usuário, não percentis observados — veja a calibração abaixo.
@@ -99,7 +106,9 @@ A rota `/api/health/ready` falhou em ao menos duas das três localidades por mai
 4. Grupo **Runtime**: event loop e heap.
 5. Dashboard de Kubernetes: **estrangulamento de CPU** sustentado explica latência sem explicar erro.
 
-### Ordens de Serviço · Falhas no processamento · **P2**
+### Falhas no processamento de ordens de serviço
+
+**Prioridade:** P2
 
 O mesmo procedimento do alerta de erros 5xx, restrito às rotas de ordem de serviço e orçamento. A diferença é o público: aqui
 há impacto de negócio nomeado, e a comunicação para fora do time é diferente.
@@ -107,7 +116,9 @@ há impacto de negócio nomeado, e a comunicação para fora do time é diferent
 Se os dois alertas de erro dispararam juntos, é a mesma falha vista de dois ângulos. **Isso é esperado e está documentado**
 como redundância assumida.
 
-### Pod · Memória próxima do limite · **P2**
+### Memória do pod próxima do limite
+
+**Prioridade:** P2
 
 1. Dashboard de Kubernetes, grupo **Memória**: qual pod, e a curva é crescimento contínuo ou pico?
 2. **Crescimento contínuo sem platô é vazamento.** Grupo **Runtime** do dashboard de API: `v8js.memory.heap.used`
@@ -117,7 +128,9 @@ como redundância assumida.
 4. Mitigação imediata: reiniciar o deployment. Correção: investigar o vazamento ou subir o limite no
    repositório `oficina-mecanica-work-order-service`.
 
-### Pod · Reinícios de contêiner · **P3**
+### Reinícios de contêiner
+
+**Prioridade:** P3
 
 1. Dashboard de Kubernetes, grupo **Ciclo de vida**: quantos pods e com que frequência.
 2. **O alerta de memória disparou antes?** Então foi encerramento por falta de memória.
@@ -126,7 +139,9 @@ como redundância assumida.
 5. Um reinício isolado logo após provisionamento pode ser normal; `new_group_delay` de 600 s existe para
    filtrar a maior parte disso.
 
-### Lambda customer-auth · Erros de execução · **P2**
+### Erros de execução da Lambda
+
+**Prioridade:** P2
 
 1. **Qualquer erro aqui é defeito.** A função devolve 401 como resposta normal de credencial inválida; erro de
    plataforma é outra coisa.
@@ -136,17 +151,25 @@ como redundância assumida.
    falta de memória. Ambos incrementam `errors`.
 5. Sem traces na função (L4): os logs são a única evidência.
 
-### Integrações · Falha de envio de e-mail · **P4**
+### Falha de envio de e-mail
 
-1. A mensagem nomeia a **categoria** do erro, e ela decide a ação: credencial recusada é configuração, tempo
-   esgotado é rede, endereço inválido é dado.
+**Prioridade:** P4
+
+1. A mensagem nomeia o **motivo** e o **tipo de e-mail** (propósito) que falhou. O motivo decide a ação:
+   `smtp_error` é o servidor de e-mail recusando ou fora do ar, `invalid_message` é uma mensagem da fila que a
+   Lambda notification não consegue ler.
 2. P4 significa que isto **não interrompe o fluxo principal**: a ordem de serviço avança, a notificação não sai.
 3. O link de logs da mensagem já está filtrado no evento.
 
-### Dependência · Health check degradado · **P3**
+### Health check degradado
 
-1. A mensagem nomeia a **categoria da dependência** que falhou.
-2. Se a dependência for o banco, os alertas de erro e de latência provavelmente dispararão em seguida — trate a causa aqui.
+**Prioridade:** P3
+
+1. A mensagem nomeia o **serviço**, a **dependência** verificada (hoje só o banco, `postgresql`) e a **categoria
+   da falha**: `timeout` (prazo esgotado), `connection` (sem conexão), `pool` (pool de conexões saturado),
+   `authentication` (credencial recusada), `query` (consulta falhou) ou `unknown`.
+2. Com o banco degradado, os alertas de erro e de latência do mesmo serviço provavelmente dispararão em seguida —
+   trate a causa aqui.
 3. É o único sinal que nomeia a dependência: a rota de saúde não é observável por métrica nem trace (L3).
 
 ---

@@ -13,7 +13,7 @@ resource "datadog_dashboard" "work_orders" {
   template_variable {
     name     = "service"
     prefix   = "service"
-    defaults = [var.api_service]
+    defaults = [local.services["work-order"].service]
   }
 
   widget {

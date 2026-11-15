@@ -1,17 +1,26 @@
 # A rota de saúde é excluida da instrumentação na entrada: não há métrica,
 # trace nem log de sucesso para ela. Verificação externa é a única forma de
 # verificar se a rota pública está de pé".
-resource "datadog_synthetics_test" "api_health" {
-  name    = "[Oficina Mecânica] Disponibilidade externa · rota pública indisponível"
+resource "datadog_synthetics_test" "service_health" {
+  for_each = local.services
+
+  name    = "[Oficina Mecânica] Disponibilidade externa ${each.key} · rota pública indisponível"
   type    = "api"
   subtype = "http"
   status  = var.environment_online ? "live" : "paused"
-  message = local.synthetic_message
-  tags    = local.api_tags
+  tags    = local.service_tags[each.key]
+
+  message = templatestring(local.synthetic_message, {
+    service       = each.value.service
+    url           = "${local.api_endpoint}/health/${each.key}"
+    dashboard_url = local.dashboard_url_service[each.key]
+    logs_url      = local.logs_url_service_errors[each.key]
+    runbook_url   = "${local.runbook_url}#disponibilidade-externa"
+  })
 
   request_definition {
     method = "GET"
-    url    = "${local.api_endpoint}/api/health/ready"
+    url    = "${local.api_endpoint}/health/${each.key}"
   }
 
   assertion {

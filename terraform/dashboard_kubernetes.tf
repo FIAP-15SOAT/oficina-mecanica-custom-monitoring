@@ -36,7 +36,7 @@ resource "datadog_dashboard" "kubernetes" {
               metric_query {
                 data_source = "metrics"
                 name        = "uso"
-                query       = "avg:kubernetes.cpu.usage.total{${local.k8s_scope}} by {pod_name}"
+                query       = "avg:kubernetes.cpu.usage.total{${local.service_k8s_scope["work-order"]}} by {pod_name}"
               }
             }
           }
@@ -52,7 +52,7 @@ resource "datadog_dashboard" "kubernetes" {
               metric_query {
                 data_source = "metrics"
                 name        = "requests"
-                query       = "avg:kubernetes.cpu.requests{${local.k8s_scope}} by {pod_name}"
+                query       = "avg:kubernetes.cpu.requests{${local.service_k8s_scope["work-order"]}} by {pod_name}"
               }
             }
 
@@ -72,7 +72,7 @@ resource "datadog_dashboard" "kubernetes" {
               metric_query {
                 data_source = "metrics"
                 name        = "limits"
-                query       = "avg:kubernetes.cpu.limits{${local.k8s_scope}} by {pod_name}"
+                query       = "avg:kubernetes.cpu.limits{${local.service_k8s_scope["work-order"]}} by {pod_name}"
               }
             }
 
@@ -100,7 +100,7 @@ resource "datadog_dashboard" "kubernetes" {
               metric_query {
                 data_source = "metrics"
                 name        = "estrangulados"
-                query       = "sum:kubernetes.cpu.cfs.throttled.periods{${local.k8s_scope}} by {pod_name}"
+                query       = "sum:kubernetes.cpu.cfs.throttled.periods{${local.service_k8s_scope["work-order"]}} by {pod_name}"
               }
             }
 
@@ -108,7 +108,7 @@ resource "datadog_dashboard" "kubernetes" {
               metric_query {
                 data_source = "metrics"
                 name        = "periodos"
-                query       = "sum:kubernetes.cpu.cfs.periods{${local.k8s_scope}} by {pod_name}"
+                query       = "sum:kubernetes.cpu.cfs.periods{${local.service_k8s_scope["work-order"]}} by {pod_name}"
               }
             }
           }
@@ -129,12 +129,12 @@ resource "datadog_dashboard" "kubernetes" {
           show_legend = true
 
           request {
-            q            = "avg:kubernetes.memory.working_set{${local.k8s_scope}} by {pod_name}"
+            q            = "avg:kubernetes.memory.working_set{${local.service_k8s_scope["work-order"]}} by {pod_name}"
             display_type = "area"
           }
 
           request {
-            q            = "avg:kubernetes.memory.limits{${local.k8s_scope}} by {pod_name}"
+            q            = "avg:kubernetes.memory.limits{${local.service_k8s_scope["work-order"]}} by {pod_name}"
             display_type = "line"
 
             style {
@@ -161,7 +161,7 @@ resource "datadog_dashboard" "kubernetes" {
               metric_query {
                 data_source = "metrics"
                 name        = "uso"
-                query       = "avg:kubernetes.memory.working_set{${local.k8s_scope}} by {pod_name}"
+                query       = "avg:kubernetes.memory.working_set{${local.service_k8s_scope["work-order"]}} by {pod_name}"
               }
             }
 
@@ -169,7 +169,7 @@ resource "datadog_dashboard" "kubernetes" {
               metric_query {
                 data_source = "metrics"
                 name        = "limite"
-                query       = "avg:kubernetes.memory.limits{${local.k8s_scope}} by {pod_name}"
+                query       = "avg:kubernetes.memory.limits{${local.service_k8s_scope["work-order"]}} by {pod_name}"
               }
             }
           }
@@ -210,7 +210,7 @@ resource "datadog_dashboard" "kubernetes" {
           text_align = "center"
 
           request {
-            q          = "count_nonzero(avg:kubernetes.memory.working_set{${local.k8s_scope}} by {pod_name})"
+            q          = "count_nonzero(avg:kubernetes.memory.working_set{${local.service_k8s_scope["work-order"]}} by {pod_name})"
             aggregator = "last"
 
             conditional_formats {
@@ -244,7 +244,7 @@ resource "datadog_dashboard" "kubernetes" {
               metric_query {
                 data_source = "metrics"
                 name        = "reinicios"
-                query       = "max:kubernetes.containers.restarts{${local.k8s_scope}} by {pod_name}"
+                query       = "max:kubernetes.containers.restarts{${local.service_k8s_scope["work-order"]}} by {pod_name}"
               }
             }
           }

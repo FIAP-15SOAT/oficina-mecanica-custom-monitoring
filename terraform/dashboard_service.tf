@@ -1,6 +1,8 @@
-resource "datadog_dashboard" "api" {
-  title       = "Oficina Mecânica · API"
-  description = "Performance e erros da API. Detalhe do grupo API da Visão Geral."
+resource "datadog_dashboard" "service" {
+  for_each = local.services
+
+  title       = "Oficina Mecânica · Serviço ${each.key}"
+  description = "Performance e erros do serviço ${each.key}. Detalhe da linha ${each.key} da Visão Geral."
   layout_type = "ordered"
   tags        = local.dashboard_tags
 
@@ -13,12 +15,12 @@ resource "datadog_dashboard" "api" {
   template_variable {
     name     = "service"
     prefix   = "service"
-    defaults = [var.api_service]
+    defaults = [each.value.service]
   }
 
   widget {
     note_definition {
-      content          = "**Onde a API está lenta, e por quê?** Janela padrão de 1 hora. Os grupos seguem o caminho da requisição: entrada, dependência, processo, evidência.\n\nLatência vem de `http.server.request.duration` (OTLP, em **segundos**), não das *trace metrics* do APM. A fonte escolhida preserva as dimensões usadas pelos consumidores e permanece independente da amostragem de traces.\n\nAs dimensões indexadas desta métrica são **apenas** `env`, `service`, `http.route` e `http.response.status_code` — quebrar por método HTTP ou por versão não é possível aqui, porque são dimensões descartadas do índice para conter o custo de custom metrics."
+      content          = "**Onde o serviço está lento, e por quê?** Janela padrão de 1 hora. Os grupos seguem o caminho da requisição: entrada, dependência, processo, evidência.\n\nLatência vem de `http.server.request.duration` (OTLP, em **segundos**), não das *trace metrics* do APM. A fonte escolhida preserva as dimensões usadas pelos consumidores e permanece independente da amostragem de traces.\n\nAs dimensões indexadas desta métrica são **apenas** `env`, `service`, `http.route` e `http.response.status_code` — quebrar por método HTTP ou por versão não é possível aqui, porque são dimensões descartadas do índice para conter o custo de custom metrics."
       background_color = "blue"
       font_size        = "14"
       text_align       = "left"
@@ -449,6 +451,173 @@ resource "datadog_dashboard" "api" {
   widget {
     group_definition {
       layout_type = "ordered"
+      title       = "Cache"
+
+      widget {
+        note_definition {
+          content          = "`cache.unavailable` é uma leitura que caiu no banco porque o cache não respondeu; `cache.invalidation_failed` é uma chave que não foi apagada depois de uma escrita e fica velha até expirar."
+          background_color = "yellow"
+          font_size        = "12"
+          text_align       = "left"
+          vertical_align   = "top"
+          has_padding      = true
+        }
+      }
+
+      widget {
+        timeseries_definition {
+          title       = "Falhas de cache por evento"
+          live_span   = "1h"
+          show_legend = true
+
+          request {
+            display_type = "bars"
+
+            formula {
+              formula_expression = "falhas"
+            }
+
+            query {
+              event_query {
+                data_source = "logs"
+                name        = "falhas"
+                indexes     = ["*"]
+
+                compute {
+                  aggregation = "count"
+                }
+
+                search {
+                  query = "service:$service env:$env @oficina.event.name:(cache.unavailable OR cache.invalidation_failed)"
+                }
+
+                group_by {
+                  facet = "@oficina.event.name"
+                  limit = 5
+
+                  sort {
+                    aggregation = "count"
+                    order       = "desc"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  widget {
+    group_definition {
+      layout_type = "ordered"
+      title       = "Chamadas de saída"
+
+      widget {
+        timeseries_definition {
+          title       = "Duração das chamadas HTTP de saída por destino — média e máximo (s)"
+          live_span   = "1h"
+          show_legend = true
+
+          request {
+            display_type = "line"
+
+            formula {
+              formula_expression = "media"
+            }
+
+            query {
+              metric_query {
+                data_source = "metrics"
+                name        = "media"
+                query       = "avg:http.client.request.duration{$env,$service} by {server.address}"
+              }
+            }
+          }
+
+          request {
+            display_type = "line"
+
+            formula {
+              formula_expression = "maximo"
+            }
+
+            query {
+              metric_query {
+                data_source = "metrics"
+                name        = "maximo"
+                query       = "max:http.client.request.duration{$env,$service} by {server.address}"
+              }
+            }
+
+            style {
+              palette   = "warm"
+              line_type = "dashed"
+            }
+          }
+        }
+      }
+
+      widget {
+        timeseries_definition {
+          title       = "Chamadas HTTP de saída por destino e status"
+          live_span   = "1h"
+          show_legend = true
+
+          request {
+            display_type = "bars"
+
+            formula {
+              formula_expression = "chamadas"
+            }
+
+            query {
+              metric_query {
+                data_source = "metrics"
+                name        = "chamadas"
+                query       = "count:http.client.request.duration{$env,$service} by {server.address,http.response.status_code}.as_count()"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  widget {
+    group_definition {
+      layout_type = "ordered"
+      title       = "Fila"
+
+      widget {
+        timeseries_definition {
+          title       = "Mensagens consumidas por fila e resultado"
+          live_span   = "1h"
+          show_legend = true
+
+          request {
+            display_type = "bars"
+
+            formula {
+              formula_expression = "consumidas"
+            }
+
+            query {
+              metric_query {
+                data_source = "metrics"
+                name        = "consumidas"
+                query       = "sum:oficina.messaging.consumed{$env,$service} by {messaging.destination.name,outcome}.as_count()"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  widget {
+    group_definition {
+      layout_type = "ordered"
       title       = "Runtime"
 
       widget {
@@ -555,7 +724,7 @@ resource "datadog_dashboard" "api" {
 
       widget {
         log_stream_definition {
-          title     = "Logs de erro da API"
+          title     = "Logs de erro do serviço"
           live_span = "1h"
           query     = "service:$service env:$env status:error"
 

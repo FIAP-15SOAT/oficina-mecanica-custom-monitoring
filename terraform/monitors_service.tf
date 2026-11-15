@@ -1,8 +1,10 @@
-resource "datadog_monitor" "api_5xx" {
-  name = "[Oficina Mecânica] API · Erros 5xx acima do limite"
+resource "datadog_monitor" "service_5xx" {
+  for_each = local.services
+
+  name = "[Oficina Mecânica] Serviço ${each.key} · Erros 5xx acima do limite"
   type = "query alert"
 
-  query = "sum(last_10m):count:http.server.request.duration{${local.api_scope},http.response.status_code:5*} by {http.route}.as_count() > ${var.api_5xx_critical_count}"
+  query = "sum(last_10m):count:http.server.request.duration{${local.service_scope[each.key]},http.response.status_code:5*} by {http.route}.as_count() > ${var.api_5xx_critical_count}"
 
   monitor_thresholds {
     warning  = var.api_5xx_warning_count
@@ -13,12 +15,13 @@ resource "datadog_monitor" "api_5xx" {
     alert_symptom   = "Erros 5xx acima do limite"
     warning_symptom = "Erros 5xx subindo"
     group_suffix    = " — rota `{{http.route.name}}`"
-    service         = var.api_service
+    service         = each.value.service
     environment     = var.env
     unit            = "respostas 5xx"
     window          = "10 min"
-    dashboard_url   = local.dashboard_url_api
-    logs_url        = local.logs_url_api_errors
+    dashboard_url   = local.dashboard_url_service[each.key]
+    logs_url        = local.logs_url_service_errors[each.key]
+    runbook_url     = "${local.runbook_url}#erros-5xx-acima-do-limite"
   })
 
   new_group_delay     = 300
@@ -30,14 +33,16 @@ resource "datadog_monitor" "api_5xx" {
   include_tags      = true
   priority          = "2"
 
-  tags = local.api_tags
+  tags = local.service_tags[each.key]
 }
 
-resource "datadog_monitor" "api_latency_p95" {
-  name = "[Oficina Mecânica] API · Latência p95 acima do alvo"
+resource "datadog_monitor" "service_latency_p95" {
+  for_each = local.services
+
+  name = "[Oficina Mecânica] Serviço ${each.key} · Latência p95 acima do alvo"
   type = "query alert"
 
-  query = "percentile(last_15m):p95:http.server.request.duration{${local.api_scope}} > ${var.api_latency_p95_critical_seconds}"
+  query = "percentile(last_15m):p95:http.server.request.duration{${local.service_scope[each.key]}} > ${var.api_latency_p95_critical_seconds}"
 
   monitor_thresholds {
     warning  = var.api_latency_p95_warning_seconds
@@ -48,12 +53,13 @@ resource "datadog_monitor" "api_latency_p95" {
     alert_symptom   = "Latência p95 acima do alvo"
     warning_symptom = "Latência p95 subindo"
     group_suffix    = ""
-    service         = var.api_service
+    service         = each.value.service
     environment     = var.env
     unit            = "segundos no p95"
     window          = "15 min"
-    dashboard_url   = local.dashboard_url_api
-    logs_url        = local.logs_url_api_errors
+    dashboard_url   = local.dashboard_url_service[each.key]
+    logs_url        = local.logs_url_service_errors[each.key]
+    runbook_url     = "${local.runbook_url}#latência-p95-acima-do-alvo"
   })
 
   require_full_window = false
@@ -64,7 +70,7 @@ resource "datadog_monitor" "api_latency_p95" {
   include_tags      = true
   priority          = "3"
 
-  tags = local.api_tags
+  tags = local.service_tags[each.key]
 
   depends_on = [datadog_metric_tag_configuration.http_server_request_duration]
 }

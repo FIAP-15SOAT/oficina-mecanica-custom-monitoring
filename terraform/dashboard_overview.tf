@@ -6,7 +6,7 @@ resource "datadog_dashboard" "overview" {
 
   widget {
     note_definition {
-      content          = "**A solução está de pé agora?** Janela padrão de 4 horas.\n\nDetalhe: [API — onde está lenta e por quê](${local.dashboard_url_api}) · [Ordens de Serviço — o fluxo está andando?](${local.dashboard_url_work_orders}) · [Kubernetes — os pods têm folga?](${local.dashboard_url_kubernetes})\n\nO laboratório é ligado sob demanda e destruído ao fim de cada sessão. Com o ambiente fora, todo número desta página é zero ou vazio, e **isso é o estado esperado, não incidente** — nenhum monitor notifica por ausência de dado."
+      content          = "**A solução está de pé agora?** Janela padrão de 4 horas.\n\nDetalhe: [API — onde está lenta e por quê](${local.dashboard_url_service["work-order"]}) · [Ordens de Serviço — o fluxo está andando?](${local.dashboard_url_work_orders}) · [Kubernetes — os pods têm folga?](${local.dashboard_url_kubernetes})\n\nO laboratório é ligado sob demanda e destruído ao fim de cada sessão. Com o ambiente fora, todo número desta página é zero ou vazio, e **isso é o estado esperado, não incidente** — nenhum monitor notifica por ausência de dado."
       background_color = "blue"
       font_size        = "14"
       text_align       = "left"
@@ -23,7 +23,7 @@ resource "datadog_dashboard" "overview" {
       widget {
         alert_graph_definition {
           title     = "Verificação externa da rota pública — histórico"
-          alert_id  = datadog_synthetics_test.api_health.monitor_id
+          alert_id  = datadog_synthetics_test.service_health["work-order"].monitor_id
           viz_type  = "timeseries"
           live_span = "4h"
         }
@@ -59,7 +59,7 @@ resource "datadog_dashboard" "overview" {
           text_align = "center"
 
           request {
-            q          = "count:http.server.request.duration{${local.api_scope}}.as_count().rollup(sum, 60)"
+            q          = "count:http.server.request.duration{${local.service_scope["work-order"]}}.as_count().rollup(sum, 60)"
             aggregator = "avg"
           }
         }
@@ -84,7 +84,7 @@ resource "datadog_dashboard" "overview" {
                 data_source = "metrics"
                 name        = "erros"
                 aggregator  = "sum"
-                query       = "count:http.server.request.duration{${local.api_scope},http.response.status_code:5*}.as_count()"
+                query       = "count:http.server.request.duration{${local.service_scope["work-order"]},http.response.status_code:5*}.as_count()"
               }
             }
 
@@ -93,7 +93,7 @@ resource "datadog_dashboard" "overview" {
                 data_source = "metrics"
                 name        = "total"
                 aggregator  = "sum"
-                query       = "count:http.server.request.duration{${local.api_scope}}.as_count()"
+                query       = "count:http.server.request.duration{${local.service_scope["work-order"]}}.as_count()"
               }
             }
 
@@ -128,7 +128,7 @@ resource "datadog_dashboard" "overview" {
           text_align  = "center"
 
           request {
-            q          = "p95:http.server.request.duration{${local.api_scope}}"
+            q          = "p95:http.server.request.duration{${local.service_scope["work-order"]}}"
             aggregator = "avg"
 
             conditional_formats {
@@ -168,7 +168,7 @@ resource "datadog_dashboard" "overview" {
           text_align = "center"
 
           request {
-            q          = "sum:oficina.work_order.created{${local.api_scope}}.as_count()"
+            q          = "sum:oficina.work_order.created{${local.service_scope["work-order"]}}.as_count()"
             aggregator = "sum"
           }
         }
@@ -188,7 +188,7 @@ resource "datadog_dashboard" "overview" {
               metric_query {
                 data_source = "metrics"
                 name        = "permanencia"
-                query       = "avg:oficina.work_order.status.duration{${local.api_scope}} by {oficina.work_order.status}"
+                query       = "avg:oficina.work_order.status.duration{${local.service_scope["work-order"]}} by {oficina.work_order.status}"
               }
             }
           }
@@ -211,7 +211,7 @@ resource "datadog_dashboard" "overview" {
           text_align = "center"
 
           request {
-            q          = "count_nonzero(avg:kubernetes.memory.working_set{${local.k8s_scope}} by {pod_name})"
+            q          = "count_nonzero(avg:kubernetes.memory.working_set{${local.service_k8s_scope["work-order"]}} by {pod_name})"
             aggregator = "last"
 
             conditional_formats {
@@ -261,7 +261,7 @@ resource "datadog_dashboard" "overview" {
               metric_query {
                 data_source = "metrics"
                 name        = "uso"
-                query       = "avg:kubernetes.memory.working_set{${local.k8s_scope}} by {pod_name}"
+                query       = "avg:kubernetes.memory.working_set{${local.service_k8s_scope["work-order"]}} by {pod_name}"
               }
             }
 
@@ -269,7 +269,7 @@ resource "datadog_dashboard" "overview" {
               metric_query {
                 data_source = "metrics"
                 name        = "limite"
-                query       = "avg:kubernetes.memory.limits{${local.k8s_scope}} by {pod_name}"
+                query       = "avg:kubernetes.memory.limits{${local.service_k8s_scope["work-order"]}} by {pod_name}"
               }
             }
           }
@@ -292,7 +292,7 @@ resource "datadog_dashboard" "overview" {
           text_align = "center"
 
           request {
-            q          = "sum:aws.lambda.enhanced.invocations{${local.lambda_scope}}.as_count()"
+            q          = "sum:aws.lambda.enhanced.invocations{${local.lambda_scope["customer-auth"]}}.as_count()"
             aggregator = "sum"
           }
         }
@@ -307,7 +307,7 @@ resource "datadog_dashboard" "overview" {
           text_align = "center"
 
           request {
-            q          = "sum:aws.lambda.enhanced.errors{${local.lambda_scope}}.as_count()"
+            q          = "sum:aws.lambda.enhanced.errors{${local.lambda_scope["customer-auth"]}}.as_count()"
             aggregator = "sum"
 
             conditional_formats {
@@ -343,7 +343,7 @@ resource "datadog_dashboard" "overview" {
               metric_query {
                 data_source = "metrics"
                 name        = "media"
-                query       = "avg:aws.lambda.enhanced.duration{${local.lambda_scope}}"
+                query       = "avg:aws.lambda.enhanced.duration{${local.lambda_scope["customer-auth"]}}"
               }
             }
           }
@@ -360,7 +360,7 @@ resource "datadog_dashboard" "overview" {
               metric_query {
                 data_source = "metrics"
                 name        = "maximo"
-                query       = "max:aws.lambda.enhanced.duration{${local.lambda_scope}}"
+                query       = "max:aws.lambda.enhanced.duration{${local.lambda_scope["customer-auth"]}}"
               }
             }
 
@@ -391,7 +391,7 @@ resource "datadog_dashboard" "overview" {
                 data_source = "metrics"
                 name        = "frias"
                 aggregator  = "sum"
-                query       = "sum:aws.lambda.enhanced.invocations{${local.lambda_scope},cold_start:true}.as_count()"
+                query       = "sum:aws.lambda.enhanced.invocations{${local.lambda_scope["customer-auth"]},cold_start:true}.as_count()"
               }
             }
 
@@ -400,7 +400,7 @@ resource "datadog_dashboard" "overview" {
                 data_source = "metrics"
                 name        = "total"
                 aggregator  = "sum"
-                query       = "sum:aws.lambda.enhanced.invocations{${local.lambda_scope}}.as_count()"
+                query       = "sum:aws.lambda.enhanced.invocations{${local.lambda_scope["customer-auth"]}}.as_count()"
               }
             }
           }

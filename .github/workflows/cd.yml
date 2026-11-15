@@ -50,7 +50,7 @@ jobs:
           fi
 
           if [ -z "${ALERT_EMAILS}" ]; then
-            echo "::error::ALERT_EMAILS não está configurada nas variáveis do repositório. Sem destinatários, os nove monitores seriam criados sem notificar ninguém."
+            echo "::error::ALERT_EMAILS não está configurada nas variáveis do repositório. Sem destinatários, os monitores seriam criados sem notificar ninguém."
             missing=1
           fi
 
@@ -106,9 +106,9 @@ jobs:
             echo '### Dashboards provisionados'
             echo ''
             echo "- [Visão Geral]($(terraform output -raw dashboard_overview_url))"
-            echo "- [API]($(terraform output -raw dashboard_api_url))"
+            terraform output -json dashboard_service_urls | jq -r 'to_entries[] | "- [Serviço \(.key)](\(.value))"'
             echo "- [Ordens de Serviço]($(terraform output -raw dashboard_work_orders_url))"
             echo "- [Kubernetes]($(terraform output -raw dashboard_kubernetes_url))"
             echo ''
-            echo "Teste sintético: \`$(terraform output -raw synthetic_test_status)\` — controlado pela variable \`ENVIRONMENT_ONLINE\`."
+            echo "Testes sintéticos: \`$(terraform output -json synthetic_test_statuses | jq -r '[.[]] | unique | join(", ")')\` — controlados pela variable \`ENVIRONMENT_ONLINE\`."
           } >> "$GITHUB_STEP_SUMMARY"

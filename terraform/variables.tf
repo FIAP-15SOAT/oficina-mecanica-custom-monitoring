@@ -9,33 +9,15 @@ variable "project_name" {
 }
 
 variable "env" {
-  description = "`env` tag emitted by the API."
+  description = "`env` tag emitted by the services and Lambdas"
   type        = string
   default     = "production"
-}
-
-variable "api_service" {
-  description = "`service` tag of the API"
-  type        = string
-  default     = "oficina-mecanica-work-order-service"
-}
-
-variable "api_kube_deployment" {
-  description = "Value of the `kube_deployment` tag that carries the API pods"
-  type        = string
-  default     = "work-order-service"
 }
 
 variable "kube_cluster_name" {
   description = "Value of the `kube_cluster_name` tag, used to scope node-level metrics that carry no service dimension"
   type        = string
   default     = "oficina-mecanica"
-}
-
-variable "lambda_function_name" {
-  description = "Value of the `functionname` tag of the customer-auth Lambda"
-  type        = string
-  default     = "lbd-oficina-mecanica-customer-auth"
 }
 
 # ---------------------------------------------------------------------------
@@ -186,14 +168,14 @@ variable "lambda_error_critical_count" {
   default     = 0
 }
 
-variable "mail_failure_warning_count" {
-  description = "Mail.send.failed events per error category in 15 minutes that raise a warning"
+variable "notification_failure_warning_count" {
+  description = "Notification.failed events per failure reason and purpose in 15 minutes that raise a warning"
   type        = number
   default     = 2
 }
 
-variable "mail_failure_critical_count" {
-  description = "Mail.send.failed events per error category in 15 minutes that raise an alert"
+variable "notification_failure_critical_count" {
+  description = "Notification.failed events per failure reason and purpose in 15 minutes that raise an alert"
   type        = number
   default     = 5
 }

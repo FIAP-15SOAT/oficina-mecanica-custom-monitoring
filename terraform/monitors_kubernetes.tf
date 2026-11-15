@@ -6,10 +6,12 @@
 # O sinal acionável seria estrangulamento sustentado, que fica no dashboard e
 # só vira monitor se a latência da API provar correlação.
 resource "datadog_monitor" "pod_memory" {
-  name = "[Oficina Mecânica] Pod · Memória próxima do limite"
+  for_each = local.services
+
+  name = "[Oficina Mecânica] Pod ${each.key} · Memória próxima do limite"
   type = "query alert"
 
-  query = "avg(last_10m):(avg:kubernetes.memory.working_set{${local.k8s_scope}} by {pod_name} / avg:kubernetes.memory.limits{${local.k8s_scope}} by {pod_name}) * 100 > ${var.pod_memory_critical_percent}"
+  query = "avg(last_10m):(avg:kubernetes.memory.working_set{${local.service_k8s_scope[each.key]}} by {pod_name} / avg:kubernetes.memory.limits{${local.service_k8s_scope[each.key]}} by {pod_name}) * 100 > ${var.pod_memory_critical_percent}"
 
   monitor_thresholds {
     warning  = var.pod_memory_warning_percent
@@ -20,12 +22,13 @@ resource "datadog_monitor" "pod_memory" {
     alert_symptom   = "Memória do pod próxima do limite"
     warning_symptom = "Memória do pod subindo"
     group_suffix    = " — pod `{{pod_name.name}}`"
-    service         = var.api_service
+    service         = each.value.service
     environment     = var.env
     unit            = "% do limite de memória"
     window          = "10 min"
     dashboard_url   = local.dashboard_url_kubernetes
-    logs_url        = local.logs_url_pods
+    logs_url        = local.logs_url_pods[each.key]
+    runbook_url     = "${local.runbook_url}#memória-do-pod-próxima-do-limite"
   })
 
   new_group_delay     = 300
@@ -37,7 +40,7 @@ resource "datadog_monitor" "pod_memory" {
   include_tags      = true
   priority          = "2"
 
-  tags = local.api_tags
+  tags = local.service_tags[each.key]
 }
 
 # `kubernetes.containers.restarts` é contador cumulativo: interessa a variação
@@ -47,10 +50,12 @@ resource "datadog_monitor" "pod_memory" {
 # Não troque por `change()`: essa família não dispara neste cenário, mesmo com
 # a variação do contador sendo positiva.
 resource "datadog_monitor" "pod_restarts" {
-  name = "[Oficina Mecânica] Pod · Reinícios de contêiner"
+  for_each = local.services
+
+  name = "[Oficina Mecânica] Pod ${each.key} · Reinícios de contêiner"
   type = "query alert"
 
-  query = "max(last_10m):diff(max:kubernetes.containers.restarts{${local.k8s_scope}} by {pod_name}) > ${var.pod_restart_critical_count}"
+  query = "max(last_10m):diff(max:kubernetes.containers.restarts{${local.service_k8s_scope[each.key]}} by {pod_name}) > ${var.pod_restart_critical_count}"
 
   monitor_thresholds {
     critical = var.pod_restart_critical_count
@@ -60,12 +65,13 @@ resource "datadog_monitor" "pod_restarts" {
     alert_symptom   = "Contêiner reiniciou"
     warning_symptom = "Contêiner reiniciou"
     group_suffix    = " — pod `{{pod_name.name}}`"
-    service         = var.api_service
+    service         = each.value.service
     environment     = var.env
     unit            = "de aumento no contador de reinícios"
     window          = "10 min"
     dashboard_url   = local.dashboard_url_kubernetes
-    logs_url        = local.logs_url_pods
+    logs_url        = local.logs_url_pods[each.key]
+    runbook_url     = "${local.runbook_url}#reinícios-de-contêiner"
   })
 
   new_group_delay     = 600
@@ -77,5 +83,5 @@ resource "datadog_monitor" "pod_restarts" {
   include_tags      = true
   priority          = "3"
 
-  tags = local.api_tags
+  tags = local.service_tags[each.key]
 }
