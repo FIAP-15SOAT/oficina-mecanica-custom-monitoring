@@ -7,22 +7,22 @@ Como a configuração do Datadog é declarada, versionada e reconciliada. A exec
 
 ## O que a stack provisiona
 
-Quarenta e quatro recursos, todos na conta Datadog `us5`. **Nenhum recurso AWS é criado aqui.**
+Quarenta e cinco recursos, todos na conta Datadog `us5`. **Nenhum recurso AWS é criado aqui.**
 
 | Recurso | Quantidade | De onde vem a quantidade | Arquivo |
 | --- | ---: | --- | --- |
 | `datadog_metric_tag_configuration` | 1 | a configuração de tags de `http.server.request.duration` | `metrics.tf` |
 | `datadog_dashboard` | 10 | 1 por serviço (4) + Visão Geral, Ordens de Serviço, Kubernetes, Sagas, Pagamentos e Mensageria | `dashboard_*.tf` |
-| `datadog_monitor` | 29 | 5 por serviço (20) + 1 por Lambda (2) + 7 únicos | `monitors_*.tf` |
+| `datadog_monitor` | 30 | 5 por serviço (20) + 1 por Lambda (2) + 8 únicos | `monitors_*.tf` |
 | `datadog_synthetics_test` | 4 | 1 por serviço | `synthetics.tf` |
 
 Os cinco monitores por serviço são erros 5xx, latência p95, memória do pod, reinícios de contêiner e health
-check degradado; os sete únicos são falhas no fluxo de ordens de serviço, falha de envio de e-mail, mensagem na
-DLQ, relay do outbox parado, webhook com assinatura inválida, compensações da aprovação de orçamento e falha na
+check degradado; os oito únicos são falhas no fluxo de ordens de serviço, falha de envio de e-mail, mensagem na
+DLQ, mensagem inválida na DLQ, relay do outbox parado, webhook com assinatura inválida, compensações da aprovação de orçamento e falha na
 limpeza do cache. Cada um está descrito em [Monitores](monitors.md).
 
 Cada teste sintético cria implicitamente o seu próprio monitor no destino, exposto em `monitor_id`. É por isso
-que a conta mostra 33 monitores para 29 recursos `datadog_monitor`.
+que a conta mostra 34 monitores para 30 recursos `datadog_monitor`.
 
 A árvore de arquivos e a convenção de nomes estão em [Convenções](conventions.md).
 
@@ -202,7 +202,7 @@ Os dezoito limiares, com o valor de `terraform.tfvars`:
 | Erros de execução das Lambdas | `lambda_error_critical_count` | 0 |
 | Falha de envio de e-mail | `notification_failure_warning_count`, `notification_failure_critical_count` | 2 e 5 eventos `notification.failed` em 15 min |
 | Health check degradado | `health_degraded_critical_count` | 0 |
-| Mensagem na DLQ | `dead_letter_critical_count` | 0 |
+| Mensagem na DLQ e mensagem inválida na DLQ | `dead_letter_critical_count` | 0 |
 | Relay do outbox parado | `outbox_publish_failure_critical_count` | 10 falhas em 5 min |
 | Webhook com assinatura inválida | `webhook_invalid_signature_critical_count` | 3 recusas em 15 min |
 | Compensações da aprovação de orçamento | `saga_compensation_critical_count` | 1 em 1 h |

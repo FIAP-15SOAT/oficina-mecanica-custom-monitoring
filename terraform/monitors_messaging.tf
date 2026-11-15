@@ -1,8 +1,9 @@
 # One monitor grouped by service covers every service, so it carries no
 # `service` tag: the tag would light every service row of the overview.
 locals {
-  logs_url_dead_lettered         = "${var.datadog_app_url}logs?query=${urlencode("${local.services_scope} @oficina.event.name:messaging.message.dead_lettered")}"
-  logs_url_outbox_publish_failed = "${var.datadog_app_url}logs?query=${urlencode("${local.services_scope} @oficina.event.name:messaging.outbox.publish_failed")}"
+  logs_url_dead_lettered              = "${var.datadog_app_url}logs?query=${urlencode("${local.services_scope} @oficina.event.name:messaging.message.dead_lettered")}"
+  logs_url_dead_lettered_without_type = "${var.datadog_app_url}logs?query=${urlencode("${local.services_scope} @oficina.event.name:messaging.message.dead_lettered -@oficina.messaging.message.type:*")}"
+  logs_url_outbox_publish_failed      = "${var.datadog_app_url}logs?query=${urlencode("${local.services_scope} @oficina.event.name:messaging.outbox.publish_failed")}"
 }
 
 # Without the AWS integration there is no queue depth; the consumer logs the
@@ -28,6 +29,44 @@ resource "datadog_monitor" "dead_lettered" {
     dashboard_url   = local.dashboard_url_messaging
     logs_url        = local.logs_url_dead_lettered
     runbook_url     = "${local.runbook_url}#mensagem-na-dlq"
+  })
+
+  new_group_delay     = 300
+  require_full_window = true
+
+  notify_no_data     = false
+  renotify_interval  = 0
+  notify_audit       = false
+  include_tags       = true
+  enable_logs_sample = true
+  priority           = "2"
+
+  tags = local.common_tags
+}
+
+# A body that is not a valid envelope reaches the DLQ without a message type,
+# and the monitor above, grouped by type, opens no group for it.
+resource "datadog_monitor" "dead_lettered_without_type" {
+  name = "[Oficina Mecânica] Mensageria · Mensagem inválida na DLQ"
+  type = "log alert"
+
+  query = "logs(\"${local.services_scope} @oficina.event.name:messaging.message.dead_lettered -@oficina.messaging.message.type:*\").index(\"*\").rollup(\"count\").by(\"service,@messaging.destination.name\").last(\"10m\") > ${var.dead_letter_critical_count}"
+
+  monitor_thresholds {
+    critical = var.dead_letter_critical_count
+  }
+
+  message = templatestring(local.monitor_message, {
+    alert_symptom   = "Mensagem sem envelope válido enviada à DLQ"
+    warning_symptom = "Mensagem sem envelope válido enviada à DLQ"
+    group_suffix    = " — serviço `{{service.name}}`, fila `{{[@messaging.destination.name].name}}`"
+    service         = "{{service.name}}"
+    environment     = var.env
+    unit            = "mensagens inválidas na DLQ"
+    window          = "10 min"
+    dashboard_url   = local.dashboard_url_messaging
+    logs_url        = local.logs_url_dead_lettered_without_type
+    runbook_url     = "${local.runbook_url}#mensagem-inválida-na-dlq"
   })
 
   new_group_delay     = 300

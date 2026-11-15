@@ -9,7 +9,9 @@ resource "datadog_monitor" "saga_compensations" {
   name = "[Oficina Mecânica] Sagas · Compensações da aprovação de orçamento"
   type = "query alert"
 
-  query = "sum(last_1h):sum:oficina.saga.finished{${local.service_scope["work-order"]},oficina.saga.outcome:compensated,oficina.saga.type:quote_approval}.as_count() > ${var.saga_compensation_critical_count}"
+  # The count only reports when the event happens; default_zero makes an empty
+  # window evaluate as zero and resolve instead of keeping the last state.
+  query = "sum(last_1h):default_zero(sum:oficina.saga.finished{${local.service_scope["work-order"]},oficina.saga.outcome:compensated,oficina.saga.type:quote_approval}.as_count()) > ${var.saga_compensation_critical_count}"
 
   monitor_thresholds {
     critical = var.saga_compensation_critical_count

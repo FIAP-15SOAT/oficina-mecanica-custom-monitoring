@@ -4,7 +4,9 @@ resource "datadog_monitor" "service_5xx" {
   name = "[Oficina Mecânica] Serviço ${each.key} · Erros 5xx acima do limite"
   type = "query alert"
 
-  query = "sum(last_10m):count:http.server.request.duration{${local.service_scope[each.key]},http.response.status_code:5*} by {http.route}.as_count() > ${var.api_5xx_critical_count}"
+  # The count only reports when the event happens; default_zero makes an empty
+  # window evaluate as zero and resolve instead of keeping the last state.
+  query = "sum(last_10m):default_zero(count:http.server.request.duration{${local.service_scope[each.key]},http.response.status_code:5*} by {http.route}.as_count()) > ${var.api_5xx_critical_count}"
 
   monitor_thresholds {
     warning  = var.api_5xx_warning_count
