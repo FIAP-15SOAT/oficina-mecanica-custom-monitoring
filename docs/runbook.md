@@ -22,24 +22,25 @@ qualquer alerta:
 1. **Iniciar o laboratório** no AWS Academy e copiar as credenciais da sessão.
 2. **Renovar os três segredos AWS de organização** — `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`,
    `AWS_SESSION_TOKEN`. Sem isso, toda esteira da solução falha.
-3. **Executar as entregas na ordem de dependência**, cada uma no seu repositório:
+3. **Executar as entregas na ordem de dependência**, em camadas. O script `environment-up.sh` do
+   repositório `oficina-mecanica-infra-base` executa essa ordem sozinho; o detalhe está no
+   [runbook dele](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-base/blob/main/docs/runbook.md):
 
-   | Ordem | Repositório | Por quê depende do anterior |
+   | Camada | Repositórios | Por que depende da anterior |
    | ---: | --- | --- |
    | 1 | `oficina-mecanica-infra-base` | VPC e subnets |
-   | 2 | `oficina-mecanica-infra-database-work-order` | precisa da rede |
-   | 3 | `oficina-mecanica-infra-k8s` | precisa da rede; publica o listener do NLB |
-   | 4 | `oficina-mecanica-work-order-service` | precisa do cluster e do banco |
-   | 5 | `oficina-mecanica-lambda-customer-auth` | precisa da rede e do banco |
-   | 6 | `oficina-mecanica-api-gateway` | precisa do listener do NLB e da Lambda; **publica `api_endpoint`** |
-   | 7 | **`oficina-mecanica-custom-monitoring`** | **precisa de `api_endpoint`** |
+   | 2 | `oficina-mecanica-infra-k8s`, `oficina-mecanica-infra-messaging` (tópico SNS e filas SQS) e os quatro bancos: `oficina-mecanica-infra-database-work-order`, `-identity`, `-billing` e `-inventory` | precisam da rede; o k8s publica o listener do NLB, o balanceador de rede interno do cluster |
+   | 3 | `oficina-mecanica-work-order-service`, `oficina-mecanica-identity-service`, `oficina-mecanica-billing-service` e `oficina-mecanica-inventory-service` | precisam do cluster, das filas e do banco de cada um |
+   | 4 | `oficina-mecanica-api-gateway` | precisa do listener do NLB; **publica `api_endpoint`** e as rotas `/health/<contexto>` |
+   | 5 | `oficina-mecanica-lambda-customer-auth` e `oficina-mecanica-lambda-notification` | precisam da rede, da fila `notification.fifo` e do identity |
+   | 6 | **`oficina-mecanica-custom-monitoring`** | **precisa de `api_endpoint`** |
 
 4. **Ajustar `ENVIRONMENT_ONLINE` para `true`** nas variables deste repositório.
-5. **Executar o CD deste repositório** (`workflow_dispatch`). O resumo da execução publica os quatro endereços
-   dos dashboards e o estado do teste sintético — confirme que ele saiu `live`.
-6. Conferir, na página do teste sintético, que ele voltou a executar e está verde.
+5. **Executar o CD deste repositório** (`workflow_dispatch`). O resumo da execução publica os endereços dos dez
+   dashboards e o estado dos quatro testes sintéticos — confirme que saíram `live`.
+6. Conferir, na página de cada teste sintético, que ele voltou a executar e está verde.
 
-**Se o passo 7 rodar antes do 6**, ele falha com
+**Se este repositório for entregue antes do gateway**, a entrega falha com
 `This object does not have an attribute named "api_endpoint"`. É o comportamento correto: o repositório está
 avisando que o alvo ainda não existe.
 
@@ -48,14 +49,15 @@ avisando que o alvo ainda não existe.
 ## Ritual de derrubada do ambiente
 
 1. **Ajustar `ENVIRONMENT_ONLINE` para `false`.**
-2. **Executar o CD deste repositório** e confirmar, no resumo, que o teste sintético saiu `paused`.
-3. Confirmar na página do teste que **não há novas execuções** depois da entrega.
+2. **Executar o CD deste repositório** e confirmar, no resumo, que os testes sintéticos saíram `paused`.
+3. Confirmar na página dos testes que **não há novas execuções** depois da entrega.
 4. Só então destruir o restante do ambiente, na **ordem inversa** da subida.
 5. Encerrar o laboratório.
 
 **Este é o passo esquecido.** Deixar `ENVIRONMENT_ONLINE` em `true` depois de destruir o ambiente reintroduz
-exatamente o ruído que o desenho eliminou: o teste continua executando contra um endereço inexistente,
-consumindo cota, e o alerta de disponibilidade dispara quatro e-mails para quatro pessoas ao fim de toda sessão. Alguns dias disso e o
+exatamente o ruído que o desenho eliminou: os quatro testes continuam executando contra um endereço
+inexistente, consumindo cota, e cada alerta de disponibilidade dispara um e-mail para cada pessoa do time ao fim
+de toda sessão. Alguns dias disso e o
 time aprende a ignorar todos os alertas — o oposto do objetivo deste repositório.
 
 Dashboards, monitores e configurações de métrica **não** precisam ser destruídos: eles não consomem recurso do
@@ -76,24 +78,28 @@ localidades por mais de dois minutos.
    execute o ritual de derrubada e o incidente acaba aqui.
 2. Abra a página do teste sintético: veja **qual** asserção falhou (`statusCode` ou `responseTime`) e em quais
    localidades. Uma só localidade falhando é rede, não aplicação — mas então o monitor não teria disparado.
-3. Verifique o grupo **Infra** da Visão Geral: há pods emitindo métrica? Se zero, o problema é o cluster ou o
-   deployment, não a aplicação.
+3. Verifique o dashboard de Kubernetes, indicador **Pods emitindo métrica** do namespace do serviço: se zero, o
+   problema é o cluster ou o Deployment, não a aplicação. Se os quatro testes falharam juntos, o problema é
+   comum a todos: gateway, NLB ou cluster.
 4. Verifique o gateway na AWS: o `api_endpoint` mudou? Se sim, o `apply` deste repositório não rodou depois da
    entrega do gateway.
-5. Se os pods estão de pé e o endereço está certo, siga para o dashboard de API: latência e erros.
+5. Se os pods estão de pé e o endereço está certo, siga para o dashboard do serviço: latência e erros. O alerta
+   de health check degradado do mesmo serviço, se disparou, diz qual dependência falhou.
 
 ### Erros 5xx acima do limite
 
 **Prioridade:** P2
 
-1. Abra o [dashboard de API](dashboards.md#oficina-mecânica--api). A **tabela de rotas** diz se o problema é de
-   uma rota ou geral.
+1. Abra o [dashboard do serviço](dashboards.md#oficina-mecânica--serviço-contexto) nomeado no alerta. A
+   **tabela de rotas** diz se o problema é de uma rota ou geral.
 2. Grupo **Erros**: o `log_stream` já está filtrado em `status:error`. Leia `@oficina.error.message` e
    `@error.type`.
 3. Grupo **Banco**: `pending_requests` subindo indica saturação de pool, que se manifesta como 5xx por tempo
    esgotado.
-4. Grupo **Runtime**: `nodejs.eventloop.delay.p99` alto indica bloqueio de event loop.
-5. Se o alerta de ordens de serviço disparou junto, o impacto atinge o fluxo de negócio — priorize.
+4. Grupo **Chamadas de saída**: um 5xx que acompanha falhas ou lentidão de outro serviço (`server.address`)
+   vem dele; siga para o dashboard do serviço chamado.
+5. Grupo **Runtime**: `nodejs.eventloop.delay.p99` alto indica bloqueio de event loop.
+6. Se o alerta de ordens de serviço disparou junto, o impacto atinge o fluxo de negócio — priorize.
 
 ### Latência p95 acima do alvo
 
@@ -101,7 +107,7 @@ localidades por mais de dois minutos.
 
 1. **Antes de tratar como incidente, verifique se o limiar é o problema.** Os valores são de percepção de
    usuário, não percentis observados — veja a calibração abaixo.
-2. Dashboard de API, grupo **Latência**: o top 10 rotas por p95 diz onde.
+2. Dashboard do serviço, grupo **Latência**: o top 10 rotas por p95 diz onde.
 3. Grupo **Banco**: a média de `db.client.operation.duration` subiu junto? A causa é o banco.
 4. Grupo **Runtime**: event loop e heap.
 5. Dashboard de Kubernetes: **estrangulamento de CPU** sustentado explica latência sem explicar erro.
@@ -110,8 +116,9 @@ localidades por mais de dois minutos.
 
 **Prioridade:** P2
 
-O mesmo procedimento do alerta de erros 5xx, restrito às rotas de ordem de serviço e orçamento. A diferença é o público: aqui
-há impacto de negócio nomeado, e a comunicação para fora do time é diferente.
+O mesmo procedimento do alerta de erros 5xx, restrito às rotas de ordem de serviço, no work-order, e de
+orçamento, no billing; o alerta nomeia o serviço e a rota. A diferença é o público: aqui há impacto de negócio
+nomeado, e a comunicação para fora do time é diferente.
 
 Se os dois alertas de erro dispararam juntos, é a mesma falha vista de dois ângulos. **Isso é esperado e está documentado**
 como redundância assumida.
@@ -121,12 +128,12 @@ como redundância assumida.
 **Prioridade:** P2
 
 1. Dashboard de Kubernetes, grupo **Memória**: qual pod, e a curva é crescimento contínuo ou pico?
-2. **Crescimento contínuo sem platô é vazamento.** Grupo **Runtime** do dashboard de API: `v8js.memory.heap.used`
-   acompanha?
+2. **Crescimento contínuo sem platô é vazamento.** Grupo **Runtime** do dashboard do serviço:
+   `v8js.memory.heap.used` acompanha?
 3. Em `critical` (90 %), o encerramento por falta de memória é iminente. Se o alerta de reinícios disparar em seguida, ele
    aconteceu.
-4. Mitigação imediata: reiniciar o deployment. Correção: investigar o vazamento ou subir o limite no
-   repositório `oficina-mecanica-work-order-service`.
+4. Mitigação imediata: reiniciar o Deployment. Correção: investigar o vazamento ou subir o limite no
+   repositório do serviço nomeado no alerta.
 
 ### Reinícios de contêiner
 
@@ -311,28 +318,34 @@ Fazer **depois de uma semana com tráfego representativo**, não antes.
 
 ### Latência
 
-1. Dashboard de API, grupo **Latência**, janela de 7 dias. Leia o **p95** e o **p99** típicos, ignorando picos
-   de provisionamento.
-2. Novos limiares: `warning = 2 × p95 observado`, `critical = 4 × p95 observado`.
+1. Dashboard de cada serviço, grupo **Latência**, janela de 7 dias. Leia o **p95** e o **p99** típicos,
+   ignorando picos de provisionamento.
+2. Os limiares valem para os quatro serviços. Use o **maior** p95 típico entre eles: novos limiares
+   `warning = 2 × p95 observado`, `critical = 4 × p95 observado`. Se um serviço for muito mais lento que os
+   outros por natureza, o Pull Request propõe limiares por serviço em vez de esconder a diferença.
 3. Ajuste `api_latency_p95_warning_seconds` e `api_latency_p95_critical_seconds` em
    `terraform/terraform.tfvars`.
 4. **Abra Pull Request citando os valores observados na descrição.** Um limiar sem justificativa registrada é
    um número inventado, e a próxima pessoa não saberá se pode mexer.
 
-### Contagem — erros 5xx, ordens de serviço e envio de e-mail
+### Contagem — erros 5xx, ordens de serviço, envio de e-mail e limiares provisórios
 
-1. Some os 5xx reais da semana no dashboard de API, por rota.
-2. Se algum monitor disparou por falso positivo, suba o limiar. Se um incidente real passou sem alerta,
+1. Some os 5xx reais da semana no dashboard de cada serviço, por rota.
+2. Para os limiares provisórios, compare com o volume da semana: falhas de publicação do outbox por serviço
+   (dashboard de Mensageria), webhooks com assinatura inválida (Pagamentos) e compensações de
+   `QUOTE_APPROVAL` por hora (Sagas).
+3. Se algum monitor disparou por falso positivo, suba o limiar. Se um incidente real passou sem alerta,
    desça-o.
-3. Mesmas variáveis, mesmo Pull Request com valores na descrição.
+4. Mesmas variáveis, mesmo Pull Request com valores na descrição. A lista das variáveis está em
+   [Infraestrutura](terraform.md#variáveis).
 
 ### Cota de custom metrics
 
 1. `Organization Settings → Usage → Custom Metrics` na conta.
-2. Compare com a estimativa de ~960 em [Observabilidade](observability.md#5-custo-de-custom-metrics) e
+2. Compare com a estimativa de ~3.960 em [Observabilidade](observability.md#5-custo-de-custom-metrics) e
    **registre o consumo real lá**.
 3. Se a cota apertar, acione a alavanca: remova `http.response.status_code` da lista de tags de
-   `http.server.request.duration` em `terraform/metrics.tf`. Isso derruba a estimativa de ~960 para ~160, e
+   `http.server.request.duration` em `terraform/metrics.tf`. Isso derruba a estimativa de ~3.960 para ~660, e
    move "erro por rota" para os logs.
 4. **Consequência a considerar antes**: os monitores de erros 5xx e de ordens de serviço perdem a base de métrica e teriam de virar monitores de log.
 

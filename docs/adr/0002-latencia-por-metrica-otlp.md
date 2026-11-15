@@ -6,7 +6,7 @@ Aceito — 2026-09-09
 
 ## Contexto
 
-O dashboard de API precisa de p50, p90, p95 e p99 de latência, e o monitor de latência alerta sobre o p95. Há dois caminhos
+O dashboard de cada serviço precisa de p50, p90, p95 e p99 de latência, e o monitor de latência alerta sobre o p95. Há dois caminhos
 possíveis na conta, e eles não são equivalentes.
 
 **Caminho 1 — *trace metrics* do APM.** O Agent gera a distribution `trace.<SPAN_NAME>` a partir dos spans,
