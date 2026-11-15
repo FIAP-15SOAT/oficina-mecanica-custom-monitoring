@@ -1,7 +1,8 @@
 locals {
-  # The HTTP instrumentation also records AWS SDK calls; SQS long polling waits
-  # up to 20 s and would flatten every other destination on the chart.
-  outgoing_http_scope = "$env,$service,!server.address:sqs.us-east-1.amazonaws.com,!server.address:sns.us-east-1.amazonaws.com"
+  # The HTTP instrumentation also records AWS SDK calls, the OTLP export to the
+  # Datadog Agent and the EC2 instance metadata reads for credentials; SQS long
+  # polling waits up to 20 s and would flatten every other destination on the chart.
+  outgoing_http_scope = "$env,$service,!server.address:sqs.us-east-1.amazonaws.com,!server.address:sns.us-east-1.amazonaws.com,!server.address:datadog-agent.platform.svc.cluster.local,!server.address:169.254.169.254"
 }
 
 resource "datadog_dashboard" "service" {

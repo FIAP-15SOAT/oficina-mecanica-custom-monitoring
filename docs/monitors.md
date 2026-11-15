@@ -1,6 +1,6 @@
 # Monitores
 
-Trinta e três monitores na conta: 29 recursos `datadog_monitor`, em nove arquivos `terraform/monitors_*.tf`, e
+Trinta e quatro monitores na conta: 30 recursos `datadog_monitor`, em nove arquivos `terraform/monitors_*.tf`, e
 os 4 monitores que os testes sintéticos de `terraform/synthetics.tf` criam no destino, um por teste. Este
 documento é a fonte única das consultas de alerta.
 
@@ -16,6 +16,7 @@ documento é a fonte única das consultas de alerta.
 | [Lambda notification · Falha de envio de e-mail](#lambda-notification--falha-de-envio-de-e-mail) | 1 | P4 | `monitors_integrations.tf` |
 | [Serviço `<contexto>` · Health check degradado](#serviço-contexto--health-check-degradado) | 4 | P3 | `monitors_integrations.tf` |
 | [Mensageria · Mensagem na DLQ](#mensageria--mensagem-na-dlq) | 1 | P2 | `monitors_messaging.tf` |
+| [Mensageria · Mensagem inválida na DLQ](#mensageria--mensagem-inválida-na-dlq) | 1 | P2 | `monitors_messaging.tf` |
 | [Mensageria · Relay do outbox parado](#mensageria--relay-do-outbox-parado) | 1 | P2 | `monitors_messaging.tf` |
 | [Pagamentos · Webhook com assinatura inválida](#pagamentos--webhook-com-assinatura-inválida) | 1 | P2 | `monitors_payments.tf` |
 | [Sagas · Compensações da aprovação de orçamento](#sagas--compensações-da-aprovação-de-orçamento) | 1 | P3 | `monitors_sagas.tf` |
@@ -48,16 +49,20 @@ Aplicada a todos, e cada item tem razão:
 | `notify_by` | **não usado** | O destino recusa uma lista que cubra *todos* os agrupamentos da consulta — `The notify_by list may not include all of the query's group keys`. O comportamento pretendido, uma notificação por rota, por pod ou por serviço afetado, **já é o padrão** de um monitor agrupado |
 | `tags` | `project:oficina-mecanica`, `managed-by:terraform`, `env:…` e, quando o monitor é de um componente, `service:…` | Ver [Convenções](conventions.md#tags-dos-recursos-criados) |
 
-**O que acontece quando não há evento.** Há dois casos, e eles são diferentes:
+**O que acontece quando não há evento.** Depende do tipo de monitor:
 
-- **A série existe e a janela está vazia** → avalia como **zero**. É o caso de um monitor de log cuja consulta
-  já retornou algo antes.
-- **A série não existe** — nenhum 5xx jamais ocorreu, nenhum erro de plataforma na Lambda — → o destino
-  reporta **`No Data`**, e não zero. Verificado na conta: os monitores de erros 5xx, de falhas no fluxo de
-  ordens de serviço e de erros da Lambda ficam em `No Data` com a solução saudável.
+- **Monitor de log** (contagem de eventos): a janela sem evento avalia como **zero**.
+- **Monitor de métrica de contagem esparsa** — erros 5xx, falhas no fluxo de ordens de serviço, erros das
+  Lambdas e compensações de Saga, métricas que só recebem ponto quando o evento acontece: a consulta é envolvida
+  em `default_zero()`, e a janela sem ponto, inclusive a de uma série que nunca existiu, avalia como **zero**.
+  Sem a função, o destino pula a avaliação e mantém o último estado. Verificado na conta: o monitor de
+  compensações ficou em alerta depois que as duas compensações saíram da janela de 1 h, e um monitor em alerta
+  não notifica a ocorrência seguinte.
+- **Monitor de métrica contínua** — latência p95, memória e reinícios de pod: com o ambiente desligado, a série
+  para, e o destino mantém o último estado ou mostra `No Data`.
 
-**Nos dois casos nada é notificado, e é `notify_no_data = false` que garante isso** — não a aritmética da
-contagem. É essa opção, e só ela, que torna seguro desligar o ambiente.
+**Em nenhum caso a falta de dado notifica, e é `notify_no_data = false` que garante isso.** É essa opção que
+torna seguro desligar o ambiente.
 
 ### Estrutura da mensagem
 
@@ -143,8 +148,8 @@ identificador. O valor vem da variable `ENVIRONMENT_ONLINE`; o ritual está no [
 **Arquivo**: `terraform/monitors_service.tf` · **Prioridade**: P2 · **Dashboard**: o do serviço
 
 ```
-sum(last_10m):count:http.server.request.duration{env:production,service:<serviço>,
-  http.response.status_code:5*} by {http.route}.as_count() > 20
+sum(last_10m):default_zero(count:http.server.request.duration{env:production,service:<serviço>,
+  http.response.status_code:5*} by {http.route}.as_count()) > 20
 ```
 
 | Warning | Critical | Janela | Agrupamento | `new_group_delay` |
@@ -197,10 +202,10 @@ sem a configuração, a consulta responde `missing_aggregation` (L6).
 **Arquivo**: `terraform/monitors_work_orders.tf` · **Prioridade**: P2 · **Dashboard**: Ordens de Serviço
 
 ```
-sum(last_10m):count:http.server.request.duration{env:production AND http.response.status_code:5*
+sum(last_10m):default_zero(count:http.server.request.duration{env:production AND http.response.status_code:5*
   AND ((service:oficina-mecanica-work-order-service AND http.route:/api/work-orders*)
     OR (service:oficina-mecanica-billing-service AND (http.route:/api/quotes* OR http.route:/api/work-orders*)))}
-  by {service,http.route}.as_count() > 5
+  by {service,http.route}.as_count()) > 5
 ```
 
 | Warning | Critical | Janela | Agrupamento | `new_group_delay` |
@@ -274,7 +279,7 @@ isso a unidade diz *de aumento no contador de reinícios*, não *reinícios*.
 **Arquivo**: `terraform/monitors_lambda.tf` · **Prioridade**: P2 · **Dashboard**: Visão Geral (grupo da Lambda)
 
 ```
-sum(last_10m):sum:aws.lambda.enhanced.errors{functionname:<nome da função>}.as_count() > 0
+sum(last_10m):default_zero(sum:aws.lambda.enhanced.errors{functionname:<nome da função>}.as_count()) > 0
 ```
 
 | Warning | Critical | Janela | Agrupamento | `require_full_window` |
@@ -294,9 +299,9 @@ de credencial inválida, e a notification devolve à fila a mensagem que não co
 prazo (`timeouts`) e falta de memória (`out_of_memory`) seriam redundantes — os dois também incrementam
 `errors`.
 
-**O estado normal deste monitor é `No Data`, não `OK`.** `aws.lambda.enhanced.errors` não existe na conta
-enquanto nenhuma falha ocorre (L14): a extensão só emite a métrica no evento. Com `notify_no_data = false`
-isso não notifica, que é exatamente o desejado num ambiente que passa a maior parte do tempo desligado. É
+**`aws.lambda.enhanced.errors` só existe depois da primeira falha** (L14): a extensão só emite a métrica no
+evento. A consulta é envolvida em `default_zero()`, e a janela sem ponto avalia como zero: o monitor fica `OK`
+com a Lambda saudável e resolve sozinho depois de um erro. É
 também por isso que `require_full_window` fica desligado aqui: numa métrica esparsa ele atrasaria a avaliação
 justamente quando a série enfim aparecesse.
 
@@ -376,6 +381,10 @@ das mensagens desistidas) da sua fila. Pouco antes, o consumidor registra `messa
 com a fila e o tipo da mensagem. **Cada ocorrência deixa uma ordem de serviço parada** até a mensagem voltar à
 fila, por isso o limiar é zero. O alerta nomeia o serviço consumidor, a fila e o tipo.
 
+Uma mensagem cujo corpo não é um envelope válido chega à DLQ sem `@oficina.messaging.message.type`, e um
+monitor de log agrupado por uma faceta ausente não abre grupo para o evento. Quem a vigia é o
+[monitor de mensagem inválida](#mensageria--mensagem-inválida-na-dlq).
+
 **Por evento de log, e não pela profundidade da DLQ**, porque a profundidade é métrica do SQS, que exige a
 integração AWS do Datadog, indisponível no laboratório (L2). Com a integração, a profundidade da DLQ seria o
 sinal mais direto.
@@ -383,6 +392,34 @@ sinal mais direto.
 **Sem tag de serviço**: é um monitor só para os quatro serviços, e aparece em "Monitores da solução" na Visão
 Geral ([Convenções](conventions.md#tags-dos-recursos-criados)). O identity não consome fila e nunca forma
 grupo aqui.
+
+---
+
+## Mensageria · Mensagem inválida na DLQ
+
+**Arquivo**: `terraform/monitors_messaging.tf` · **Prioridade**: P2 · **Dashboard**: Mensageria
+
+```
+logs("<4 serviços> @oficina.event.name:messaging.message.dead_lettered -@oficina.messaging.message.type:*")
+  .index("*").rollup("count").by("service,@messaging.destination.name").last("10m") > 0
+```
+
+| Warning | Critical | Janela | Agrupamento | `new_group_delay` |
+| --- | --- | --- | --- | --- |
+| — | > 0 | 10 min | `service`, `@messaging.destination.name` | 300 s |
+
+O consumidor só conhece o tipo da mensagem quando o corpo é um envelope válido (JSON com `messageId`, `type`,
+`occurredAt` e `payload`). Uma mensagem fora desse formato falha nas 5 tentativas e vai para a DLQ como as
+outras, mas o evento `messaging.message.dead_lettered` sai sem `@oficina.messaging.message.type`, e o
+[monitor de mensagem na DLQ](#mensageria--mensagem-na-dlq), agrupado também pelo tipo, não abre grupo para
+ele. Este monitor conta só esses eventos (`-@oficina.messaging.message.type:*`, sem o atributo) e nomeia o
+serviço e a fila. Os dois conjuntos não se sobrepõem: um evento cai em um monitor ou no outro.
+
+**Monitor separado, e não o de DLQ agrupado só por serviço e fila**, porque a ação é outra: devolver à fila
+uma mensagem com corpo inválido só a faz falhar de novo, e o [Runbook](runbook.md#mensagem-inválida-na-dlq)
+manda inspecionar e apagar a mensagem. O limiar é o mesmo (`dead_letter_critical_count`), pelo mesmo motivo.
+
+**Sem tag de serviço**, como o de mensagem na DLQ.
 
 ---
 
@@ -442,8 +479,8 @@ de quem não conhece a chave fica abaixo.
 **Arquivo**: `terraform/monitors_sagas.tf` · **Prioridade**: P3 · **Dashboard**: Sagas
 
 ```
-sum(last_1h):sum:oficina.saga.finished{env:production,service:oficina-mecanica-work-order-service,
-  oficina.saga.outcome:compensated,oficina.saga.type:quote_approval}.as_count() > 1
+sum(last_1h):default_zero(sum:oficina.saga.finished{env:production,service:oficina-mecanica-work-order-service,
+  oficina.saga.outcome:compensated,oficina.saga.type:quote_approval}.as_count()) > 1
 ```
 
 | Warning | Critical | Janela | Agrupamento | `require_full_window` |

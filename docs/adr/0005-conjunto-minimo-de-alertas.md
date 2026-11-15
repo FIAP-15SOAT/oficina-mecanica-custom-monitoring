@@ -30,7 +30,7 @@ O critério que sai daí é um só, e é aplicado a cada candidato:
 
 ## Decisão
 
-**Trinta e três monitores, de catorze tipos**, listados e detalhados em [Monitores](../monitors.md). Os seis
+**Trinta e quatro monitores, de quinze tipos**, listados e detalhados em [Monitores](../monitors.md). Os seis
 primeiros se repetem por serviço e o sétimo por função Lambda — por isso a contagem passa do número de tipos:
 
 | Monitor | Sintoma | Quantos | Prioridade |
@@ -45,6 +45,7 @@ primeiros se repetem por serviço e o sétimo por função Lambda — por isso a
 | Ordens de Serviço | Falhas no fluxo de ordens de serviço, no work-order e no billing | 1 | P2 |
 | Lambda notification · E-mail | Falha de envio de e-mail, por motivo e tipo de e-mail | 1 | P4 |
 | Mensageria · DLQ | Mensagem desistida pelo consumidor, que deixa uma ordem de serviço parada | 1 | P2 |
+| Mensageria · DLQ sem tipo | Mensagem sem envelope válido desistida pelo consumidor, que não volta com redrive | 1 | P2 |
 | Mensageria · Outbox | Relay do outbox parado: as mensagens de um serviço não saem | 1 | P2 |
 | Pagamentos · Webhook | Notificações do Mercado Pago recusadas por assinatura inválida | 1 | P2 |
 | Sagas · Compensações | Aprovações de orçamento desfeitas acima do esperado | 1 | P3 |
@@ -52,11 +53,12 @@ primeiros se repetem por serviço e o sétimo por função Lambda — por isso a
 
 **Nenhum monitor tem `notify_no_data` ligado**, e é essa opção que torna seguro desligar o ambiente.
 
-Uma janela vazia avalia como zero **apenas quando a série existe**. Quando ela nunca existiu — nenhum 5xx,
-nenhum erro de plataforma na Lambda — o destino reporta `No Data`. Com a solução saudável, os monitores de
-erros 5xx, de falhas no fluxo de ordens de serviço, de erros das Lambdas e de compensações ficam em
-`No Data`. Nenhum notifica, mas por causa de `notify_no_data = false`, não por aritmética
-de contagem.
+Os monitores de métrica de contagem esparsa — erros 5xx, falhas no fluxo de ordens de serviço, erros das
+Lambdas e compensações, métricas que só recebem ponto quando o evento acontece — envolvem a consulta em
+`default_zero()`: a janela sem ponto avalia como zero, e o monitor resolve em vez de manter o último estado.
+Sem a função, o monitor de compensações ficou em alerta depois que a janela esvaziou, e um monitor em alerta
+não notifica a ocorrência seguinte. Nos monitores de métrica contínua, com o ambiente desligado, o destino
+mantém o último estado ou mostra `No Data`; nenhum notifica, por causa de `notify_no_data = false`.
 
 **Nenhum monitor tem `renotify_interval`.** Não há plantão para escalar, e repetir o alerta a cada N minutos
 transforma a caixa de entrada em algo que se filtra.
@@ -138,7 +140,7 @@ observados sem editar as consultas.
 
 - Quatro e-mails por evento, para quatro pessoas, e nada além disso. O orçamento de atenção é gasto só onde há
   ação.
-- **Trinta e três monitores não cobrem tudo**, e não deveriam. As lacunas conhecidas — estado do cluster, API
+- **Trinta e quatro monitores não cobrem tudo**, e não deveriam. As lacunas conhecidas — estado do cluster, API
   Gateway, RDS, profundidade de fila, traces da customer-auth — estão documentadas como limitações em
   [Observabilidade](../observability.md#3-limitações), com a causa de cada uma.
 - **Os monitores sobre eventos de falha não podem ser verificados de ponta a ponta** sem provocar o evento na
@@ -147,9 +149,10 @@ observados sem editar as consultas.
   métrica `oficina.saga.finished` com `oficina.saga.outcome:compensated`, só existem quando a falha acontece.
   Os nomes foram conferidos nos catálogos dos serviços, e a verificação com a falha provocada é feita com o
   ambiente no ar.
-- **Os monitores de erros das Lambdas avaliam em `No Data`, não em `OK`**, na operação normal, porque
-  `aws.lambda.enhanced.errors` só passa a existir na primeira falha. Não notificam, e é o comportamento
-  desejado.
+- **Os monitores de contagem esparsa dependem de `default_zero()` para resolver.** Sem a função, uma janela sem
+  ponto mantém o último estado, e um monitor que ficou em alerta não notifica a ocorrência seguinte. Com ela,
+  esses monitores ficam `OK` na operação normal, inclusive os de erros das Lambdas, cuja métrica
+  `aws.lambda.enhanced.errors` só passa a existir na primeira falha.
 
 ## Gatilho de reavaliação
 

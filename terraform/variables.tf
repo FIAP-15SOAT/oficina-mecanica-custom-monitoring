@@ -187,7 +187,7 @@ variable "health_degraded_critical_count" {
 }
 
 variable "dead_letter_critical_count" {
-  description = "Messaging.message.dead_lettered events per service, queue and message type in 10 minutes that raise an alert. Zero: each one leaves a work order stuck until the redrive"
+  description = "Messaging.message.dead_lettered events per service, queue and message type (or without a type, in the invalid-message monitor) in 10 minutes that raise an alert. Zero: each one leaves a work order stuck until the redrive"
   type        = number
   default     = 0
 }

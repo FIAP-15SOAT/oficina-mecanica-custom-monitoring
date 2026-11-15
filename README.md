@@ -8,7 +8,7 @@ Este repositório é o dono de tudo o que **consome** a telemetria da Oficina Me
 ![Datadog](https://img.shields.io/badge/Datadog-provider%204.x-632CA6?logo=datadog&logoColor=white)
 ![AWS](https://img.shields.io/badge/AWS-S3%20backend-FF9900?logo=amazonaws&logoColor=white)
 ![Dashboards](https://img.shields.io/badge/dashboards-10-632CA6)
-![Monitores](https://img.shields.io/badge/monitores-33-632CA6)
+![Monitores](https://img.shields.io/badge/monitores-34-632CA6)
 
 [![CI](https://github.com/FIAP-15SOAT/oficina-mecanica-custom-monitoring/actions/workflows/ci.yml/badge.svg)](https://github.com/FIAP-15SOAT/oficina-mecanica-custom-monitoring/actions/workflows/ci.yml)
 [![CD](https://github.com/FIAP-15SOAT/oficina-mecanica-custom-monitoring/actions/workflows/cd.yml/badge.svg)](https://github.com/FIAP-15SOAT/oficina-mecanica-custom-monitoring/actions/workflows/cd.yml)
@@ -41,12 +41,12 @@ componentes de plataforma não têm esse mesmo contrato de correlação.
 
 - Declara **dez dashboards**: Visão Geral, um por serviço (work-order, identity, billing e
   inventory), Ordens de Serviço, Kubernetes, Sagas, Pagamentos e Mensageria.
-- Declara **33 monitores acionáveis**. Por serviço: disponibilidade externa, erros 5xx,
+- Declara **34 monitores acionáveis**. Por serviço: disponibilidade externa, erros 5xx,
   latência p95, memória e reinícios de pod e health check degradado. Por Lambda: erros de
   execução. Da solução: falhas no fluxo de ordens de serviço, falha de envio de e-mail,
-  mensagem na DLQ (a fila das mensagens que falharam), relay do outbox parado, webhook do
-  Mercado Pago com assinatura inválida, compensações da aprovação de orçamento e falha na
-  limpeza do cache.
+  mensagem na DLQ (a fila das mensagens que falharam), mensagem inválida na DLQ (sem o
+  envelope que diz o tipo), relay do outbox parado, webhook do Mercado Pago com assinatura
+  inválida, compensações da aprovação de orçamento e falha na limpeza do cache.
 - Declara **um teste sintético por serviço** contra a rota pública `/health/<contexto>`,
   alternado entre `live` e `paused` por uma variável de ambiente — porque o laboratório é
   ligado sob demanda e destruído ao final de cada sessão.

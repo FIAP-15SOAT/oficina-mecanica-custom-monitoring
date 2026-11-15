@@ -4,7 +4,9 @@ resource "datadog_monitor" "lambda_errors" {
   name = "[Oficina Mecânica] Lambda ${each.key} · Erros de execução"
   type = "query alert"
 
-  query = "sum(last_10m):sum:aws.lambda.enhanced.errors{${local.lambda_scope[each.key]}}.as_count() > ${var.lambda_error_critical_count}"
+  # The count only reports when the event happens; default_zero makes an empty
+  # window evaluate as zero and resolve instead of keeping the last state.
+  query = "sum(last_10m):default_zero(sum:aws.lambda.enhanced.errors{${local.lambda_scope[each.key]}}.as_count()) > ${var.lambda_error_critical_count}"
 
   monitor_thresholds {
     critical = var.lambda_error_critical_count

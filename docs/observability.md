@@ -85,7 +85,9 @@ Iguais nos quatro serviços, porque vêm do mesmo SDK e das mesmas instrumentaç
 `/internal`, ou ao Mercado Pago (`server.address:api.mercadopago.com`), no billing. Mede também as do SDK da
 AWS à fila SQS e ao tópico SNS (`sqs.us-east-1.amazonaws.com` e `sns.us-east-1.amazonaws.com`): a
 instrumentação HTTP grava a métrica de toda requisição de saída, mesmo quando não grava o span, e a leitura da
-fila espera até 20 s por mensagem; por isso o dashboard de serviço exclui esses dois hosts. **Não recebe
+fila espera até 20 s por mensagem; por isso o dashboard de serviço exclui esses dois hosts. Pelo mesmo motivo,
+exclui o envio de telemetria ao Datadog Agent (`datadog-agent.platform.svc.cluster.local`, pelo exportador OTLP)
+e a leitura de credenciais do SDK no serviço de metadados da instância EC2 (`169.254.169.254`). **Não recebe
 configuração de tags**: os dashboards a consultam por média, máximo e contagem, que não exigem percentis, e
 nenhum monitor depende dela.
 
@@ -192,7 +194,7 @@ Cada uma é citada por sigla nos demais documentos e nos comentários do Terrafo
 | **L10** | **Ambiente efêmero** | Laboratório ligado sob demanda e destruído ao final | Ausência de dado é normal e o endpoint público muda a cada provisão | Monitores usam `notify_no_data = false`; os testes sintéticos alternam entre `live` e `paused` |
 | **L12** | **Valor de tag de métrica é normalizado para minúsculas; atributo de log não** | `http.request.method` responde `get`/`post`; `@oficina.work_order.status.current` responde `IN_DIAGNOSIS` | O dashboard de Ordens de Serviço exibe as duas grafias | Consultas preservam a grafia de cada fonte |
 | **L13** | **CPU de uso em nanocores, requests e limits em cores** | `usage.total` em nanocores; `requests` em cores | Comparação direta distorce a escala | Widgets dividem o uso por `1e9` |
-| **L14** | **Métricas de falha da Lambda dependem da ocorrência da falha** | `.errors`, `.timeouts`, `.out_of_memory` são sinais de evento da extensão | Sem ocorrências, a consulta pode retornar `No Data`, não necessariamente `OK` | `notify_no_data = false` evita alerta por ausência normal da série |
+| **L14** | **Métricas de falha da Lambda dependem da ocorrência da falha** | `.errors`, `.timeouts`, `.out_of_memory` são sinais de evento da extensão | Sem ocorrências, a consulta não tem ponto | `default_zero()` na consulta do monitor avalia a janela vazia como zero (`OK`), e `notify_no_data = false` evita alerta por ausência normal da série |
 | **L16** | **O funil mede saídas de status, não um único evento de atualização** | `dashboard_work_orders.tf` consulta o histograma de permanência | Não interpreta `work_order.status.updated` como contador universal de transições | Usa `count:oficina.work_order.status.duration by {oficina.work_order.status}` |
 | **L15** | **Eventos condicionais**: `quote.rejected`, `notification.failed`, `health.degraded`, `saga.compensated`, `messaging.message.dead_lettered`, `messaging.outbox.publish_failed`, `payment.webhook.invalid_signature`, `cache.unavailable`, `cache.invalidation_failed` | Emitidos somente pelos caminhos correspondentes da aplicação | Widgets podem ficar vazios sem recusa ou falha no intervalo selecionado | Consultas usam os catálogos dos serviços e das Lambdas; ausência de ocorrência não é ausência de implementação |
 

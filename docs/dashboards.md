@@ -225,13 +225,15 @@ span, não métrica: os eventos são o único sinal agregável que a aplicação
 
 | Widget | Consulta |
 | --- | --- |
-| Duração das chamadas HTTP de saída por destino — média e máximo (s) | `avg:` e `max:http.client.request.duration{$env,$service,!server.address:sqs.us-east-1.amazonaws.com,!server.address:sns.us-east-1.amazonaws.com} by {server.address}` |
+| Duração das chamadas HTTP de saída por destino — média e máximo (s) | `avg:` e `max:http.client.request.duration{$env,$service,!server.address:sqs.us-east-1.amazonaws.com,!server.address:sns.us-east-1.amazonaws.com,!server.address:datadog-agent.platform.svc.cluster.local,!server.address:169.254.169.254} by {server.address}` |
 | Chamadas HTTP de saída por destino e status | `count:http.client.request.duration{…mesmo escopo…} by {server.address,http.response.status_code}.as_count()`, em barras |
 
 `server.address` é o host chamado: outro serviço da solução, pela rota interna, ou o Mercado Pago, no billing.
 As chamadas que o SDK da AWS faz à fila SQS e ao tópico SNS também entram na métrica e ficam de fora do grupo:
 a leitura da fila espera até 20 s por mensagem (*long polling*) e achataria no zero as outras linhas do
-gráfico. O consumo e o outbox estão no grupo Fila e no dashboard de Mensageria. Um serviço que não chama
+gráfico. Ficam de fora também o envio de telemetria ao Datadog Agent (`datadog-agent.platform.svc.cluster.local`,
+o exportador OTLP do próprio serviço) e a leitura de credenciais no serviço de metadados da instância EC2
+(`169.254.169.254`), que não são chamadas do negócio. O consumo e o outbox estão no grupo Fila e no dashboard de Mensageria. Um serviço que não chama
 ninguém deixa o grupo vazio.
 
 ### Fila

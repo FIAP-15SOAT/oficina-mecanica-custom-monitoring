@@ -65,9 +65,9 @@ Recursos ligados a um componente carregam também `service:<serviço>`:
 | Compensações da aprovação de orçamento | `service:oficina-mecanica-work-order-service` |
 | Erros de execução de cada Lambda | o `service` da função, por exemplo `service:oficina-mecanica-lambda-customer-auth` |
 | Falha de envio de e-mail | `service:oficina-mecanica-lambda-notification` |
-| Mensagem na DLQ, relay do outbox parado e falha na limpeza do cache | **nenhuma** |
+| Mensagem na DLQ, mensagem inválida na DLQ, relay do outbox parado e falha na limpeza do cache | **nenhuma** |
 
-**Os três monitores sem tag de serviço** são um monitor só para os quatro serviços, agrupado por `service`.
+**Os quatro monitores sem tag de serviço** são um monitor só para os quatro serviços, agrupado por `service`.
 Marcá-los com os quatro serviços faria todas as linhas "Monitores do serviço" da Visão Geral ficarem vermelhas
 quando um único serviço alerta; sem a tag, eles aparecem em "Monitores da solução", e o alerta nomeia o
 serviço afetado.

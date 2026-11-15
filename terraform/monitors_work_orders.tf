@@ -9,7 +9,9 @@ resource "datadog_monitor" "work_order_failures" {
   name = "[Oficina Mecânica] Ordens de Serviço · Falhas no processamento"
   type = "query alert"
 
-  query = "sum(last_10m):count:http.server.request.duration{${local.work_order_flow_scope}} by {service,http.route}.as_count() > ${var.work_order_5xx_critical_count}"
+  # The count only reports when the event happens; default_zero makes an empty
+  # window evaluate as zero and resolve instead of keeping the last state.
+  query = "sum(last_10m):default_zero(count:http.server.request.duration{${local.work_order_flow_scope}} by {service,http.route}.as_count()) > ${var.work_order_5xx_critical_count}"
 
   monitor_thresholds {
     warning  = var.work_order_5xx_warning_count

@@ -223,6 +223,39 @@ serviço a que ela pertence fica parada até a mensagem voltar. O alerta nomeia 
 A fila `notification.fifo`, da Lambda notification, não aparece aqui: quem a vigia é o alerta de falha de envio
 de e-mail.
 
+### Mensagem inválida na DLQ
+
+**Prioridade:** P2
+
+O consumidor desistiu de uma mensagem cujo corpo não é um envelope válido (JSON com `messageId`, `type`,
+`occurredAt` e `payload`), por isso o alerta nomeia só o **serviço** e a **fila**, sem o tipo. Os serviços da
+solução publicam sempre pelo outbox, com envelope válido: uma mensagem assim veio de fora do fluxo normal, por
+exemplo de um envio manual à fila. **Não a devolva à fila de origem**: ela falharia de novo nas 5 tentativas.
+
+1. Abra o link de logs: o evento `messaging.message.dead_lettered` traz o erro do consumidor (por exemplo,
+   `Corpo da mensagem não é um JSON válido`) e o `messaging.message.id`, o id da mensagem no SQS.
+2. Leia as mensagens da DLQ do consumidor nomeado no alerta, sem apagá-las:
+
+   ```bash
+   # URL da DLQ do consumidor nomeado no alerta (troque work-order pelo consumidor)
+   DLQ_URL=$(aws sqs get-queue-url --queue-name work-order-dlq.fifo --query QueueUrl --output text)
+
+   # Ler até 10 mensagens com id, recibo e corpo; elas voltam a ficar visíveis depois de 60 s
+   aws sqs receive-message --queue-url "$DLQ_URL" --max-number-of-messages 10 --visibility-timeout 60      --query 'Messages[].[MessageId,ReceiptHandle,Body]'
+   ```
+
+3. Descubra quem enviou a mensagem (um envio manual, um teste, um produtor fora do outbox) e corrija a origem.
+4. Apague da DLQ a mensagem com o `MessageId` do passo 1, usando o `ReceiptHandle` lido no passo 2 antes que os
+   60 s acabem (se acabarem, leia de novo):
+
+   ```bash
+   # Apagar a mensagem inválida da DLQ
+   aws sqs delete-message --queue-url "$DLQ_URL" --receipt-handle '<ReceiptHandle>'
+   ```
+
+5. **Verificação:** o monitor se recupera sozinho quando nenhuma mensagem inválida nova vai para a DLQ na janela
+   de 10 minutos.
+
 ### Relay do outbox parado
 
 **Prioridade:** P2

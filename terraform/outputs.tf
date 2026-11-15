@@ -46,6 +46,7 @@ output "monitor_ids" {
     ordens_de_servico       = datadog_monitor.work_order_failures.id
     email_falha_envio       = datadog_monitor.mail_send_failed.id
     mensagem_na_dlq         = datadog_monitor.dead_lettered.id
+    mensagem_invalida_dlq   = datadog_monitor.dead_lettered_without_type.id
     relay_outbox_parado     = datadog_monitor.outbox_publish_failed.id
     webhook_assinatura      = datadog_monitor.webhook_invalid_signature.id
     compensacoes_saga       = datadog_monitor.saga_compensations.id
