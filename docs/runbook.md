@@ -328,15 +328,15 @@ e a leitura seguinte devolve o valor antigo até a chave expirar, em até 12 hor
    até a requisição ou mensagem que fez a escrita para saber qual registro mudou.
 2. Se o cache já responde, apague a chave desse registro para não esperar a expiração, com
    `valkey-cli --tls -h "$CACHE_HOST" -p 6379 -a "$CACHE_TOKEN" --no-auth-warning DEL <chave>` num pod efêmero
-   no namespace do serviço. O pod, o endereço e o token são os do teste de conexão a partir do cluster, no README do
+   no namespace do serviço. O pod, o endereço e o token são os do teste de conexão (seção 2.2) do runbook do
    repositório de dados do serviço:
 
    | Serviço | Chaves | Repositório de dados |
    | --- | --- | --- |
-   | work-order | `work-order:work-order:<id>` | [`oficina-mecanica-infra-database-work-order`](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-database-work-order/blob/main/README.md#teste-de-conexão-a-partir-do-cluster) |
-   | identity | `identity:user:<id>` | [`oficina-mecanica-infra-database-identity`](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-database-identity/blob/main/README.md#teste-de-conexão-a-partir-do-cluster) |
-   | billing | `billing:quote:<id>` e `billing:work-order-quotes:<workOrderId>` | [`oficina-mecanica-infra-database-billing`](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-database-billing/blob/main/README.md#teste-de-conexão-a-partir-do-cluster) |
-   | inventory | `inventory:service:<id>` e `inventory:part-supply:<id>` | [`oficina-mecanica-infra-database-inventory`](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-database-inventory/blob/main/README.md#teste-de-conexão-a-partir-do-cluster) |
+   | work-order | `work-order:work-order:<id>` | [`oficina-mecanica-infra-database-work-order`](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-database-work-order/blob/main/docs/runbook.md) |
+   | identity | `identity:user:<id>` | [`oficina-mecanica-infra-database-identity`](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-database-identity/blob/main/docs/runbook.md) |
+   | billing | `billing:quote:<id>` e `billing:work-order-quotes:<workOrderId>` | [`oficina-mecanica-infra-database-billing`](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-database-billing/blob/main/docs/runbook.md) |
+   | inventory | `inventory:service:<id>` e `inventory:part-supply:<id>` | [`oficina-mecanica-infra-database-inventory`](https://github.com/FIAP-15SOAT/oficina-mecanica-infra-database-inventory/blob/main/docs/runbook.md) |
 
 3. Se o cache continua inacessível, a chave expira sozinha em até 12 horas; o mesmo teste de conexão diz se o
    problema é rede, senha ou o próprio cache.
