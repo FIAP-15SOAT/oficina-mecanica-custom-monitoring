@@ -91,6 +91,8 @@ Página de entrada. Uma linha por serviço e por Lambda, legível em segundos. T
 links da nota de abertura: um para o dashboard de cada serviço e um para cada dashboard de detalhe (Ordens de
 Serviço, Sagas, Pagamentos, Mensageria e Kubernetes).
 
+![Dashboard Visão Geral no Datadog](evidence/dashboard-visao-geral.png)
+
 ### Disponibilidade
 
 | Widget | Consulta | Monitor ligado |
@@ -165,6 +167,11 @@ template**: `$env`, `$service` (o padrão é o serviço do dashboard)
 São quatro, com o mesmo conteúdo: `Serviço work-order`, `Serviço identity`, `Serviço billing` e
 `Serviço inventory`. A ordem dos grupos é deliberada e segue o caminho da requisição: entrada → dependência →
 processo → evidência.
+
+![Dashboard Serviço billing no Datadog](evidence/dashboard-servico-billing.png)
+
+As capturas dos outros três: [work-order](evidence/dashboard-servico-work-order.png),
+[identity](evidence/dashboard-servico-identity.png) e [inventory](evidence/dashboard-servico-inventory.png).
 
 ### Requisições
 
@@ -279,6 +286,8 @@ traria `kube-proxy` e `metrics-server` como se fossem defeito da aplicação (L7
 Janela de 7 dias porque a unidade de análise é o ciclo de uma ordem de serviço, não a requisição. As métricas
 vêm do work-order; as decisões de orçamento, do billing, que é o dono dos orçamentos.
 
+![Dashboard Ordens de Serviço no Datadog](evidence/dashboard-ordens-de-servico.png)
+
 **Média e máximo, não percentis.** As três métricas de negócio também são *distributions*, e p50/p95 sobre elas
 exigiriam habilitar percentis métrica a métrica — o que dobra o custo em custom metrics de cada uma. Nenhum
 monitor depende desses percentis, e para responder "alguma ordem ficou presa neste status?" o **máximo** é
@@ -346,6 +355,8 @@ o namespace `platform` tem o Datadog Agent e o MailHog (o servidor de e-mail de 
 `kube_cluster_name:oficina-mecanica,$kube_namespace`, e os gráficos por pod separam as séries por
 `kube_namespace` e `pod_name`. Escolher namespaces no filtro do topo restringe esses gráficos.
 
+![Dashboard Kubernetes no Datadog](evidence/dashboard-kubernetes.png)
+
 | Grupo | Widget | Consulta |
 | --- | --- | --- |
 | CPU | CPU por pod contra requests e limits (cores) | `avg:kubernetes.cpu.usage.total{<escopo>} by {kube_namespace,pod_name} / 1e9`, sobreposta a `cpu.requests` e `cpu.limits` |
@@ -392,6 +403,8 @@ Há dois tipos: `QUOTE_APPROVAL`, a aprovação de orçamento (o billing aprova,
 work-order muda a ordem de serviço), e `PAYMENT`, a cobrança da ordem de serviço no Mercado Pago. Todos os
 sinais vêm do work-order.
 
+![Dashboard Sagas no Datadog](evidence/dashboard-sagas.png)
+
 A nota de abertura liga ao funil de Ordens de Serviço, a Mensageria e ao item de mensagem na DLQ do
 [Runbook](runbook.md#mensagem-na-dlq).
 
@@ -432,6 +445,8 @@ média e o máximo não respondam com este volume.
 O billing cria a cobrança de uma ordem de serviço no Mercado Pago, o provedor de pagamento, e recebe o
 resultado por uma notificação HTTP assinada (webhook). Todos os sinais vêm do billing.
 
+![Dashboard Pagamentos no Datadog](evidence/dashboard-pagamentos.png)
+
 | Grupo | Widget | Consulta |
 | --- | --- | --- |
 | Cobranças | Cobranças criadas na janela | `sum:oficina.payment.requested{…billing…}.as_count()`, indicador |
@@ -457,6 +472,8 @@ Os serviços trocam comandos e eventos por um tópico SNS (`oficina-events.fifo`
 entregam na ordem de envio, uma por consumidor: `work-order.fifo`, `billing.fifo`, `inventory.fifo` e
 `notification.fifo`, da Lambda notification. Cada serviço grava a mensagem que vai publicar numa tabela
 `outbox` do próprio banco e um laço do serviço (o relay) a publica no tópico.
+
+![Dashboard Mensageria no Datadog](evidence/dashboard-mensageria.png)
 
 **Sem profundidade de fila nem idade da mensagem mais antiga.** São métricas do SQS que exigem a integração AWS
 do Datadog, indisponível no laboratório (L2). A nota de abertura diz isso; os gráficos usam o que as

@@ -160,7 +160,7 @@ Passo a passo completo, incluindo como consultar a conta sem passar pelo Terrafo
 │   ├── monitors_cache.tf           falha na limpeza do cache
 │   ├── terraform.tfvars               configuração estável da stack
 │   └── terraform.tfvars.example       referência para configuração local
-├── docs/                           documentação e ADRs
+├── docs/                           documentação, ADRs, diagramas e capturas dos dashboards (evidence/)
 ├── .github/workflows/              ci.yml e cd.yml
 ├── .gitignore
 └── README.md
@@ -171,7 +171,7 @@ Passo a passo completo, incluindo como consultar a conta sem passar pelo Terrafo
 | Documento | Conteúdo |
 | --- | --- |
 | 🔭 [Observabilidade](docs/observability.md) | **Documento âncora**: inventário dos sinais disponíveis com tags e semântica, as limitações atuais com evidência, as divergências e sua fonte de verdade, e a conta de custo de custom metrics |
-| 📊 [Dashboards](docs/dashboards.md) | Um dashboard por seção com pergunta, público, janela, widgets e consultas — mais as nove regras visuais e os dashboards recusados |
+| 📊 [Dashboards](docs/dashboards.md) | Um dashboard por seção com pergunta, público, janela, captura de tela, widgets e consultas — mais as nove regras visuais e os dashboards recusados |
 | 🚨 [Monitores](docs/monitors.md) | Um monitor por seção com consulta, limiares, janela, agrupamento, prioridade e mensagem; os alertas recusados; as sobreposições assumidas entre monitores; a calibração de limiar |
 | 📐 [Convenções](docs/conventions.md) | Nomenclatura de dashboards, monitores, arquivos e recursos, a estratégia de tagging reaproveitando as dimensões existentes e a tabela dos sinais de cada serviço com o catálogo de origem |
 | ☁️ [Infraestrutura](docs/terraform.md) | Recursos provisionados, os mapas de serviços e de Lambdas, providers, autenticação, state e trava, state remoto consumido, variáveis, locals, ausência de módulos, importação e prevenção de desvio |
